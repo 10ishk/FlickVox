@@ -1,11 +1,202 @@
-<Window x:Class="FlickVox.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="FlickVox" Width="1000" Height="640" MinWidth="560" MinHeight="480" Background="{DynamicResource Brush.Canvas}" Foreground="{DynamicResource Brush.Text}" TextElement.Foreground="{DynamicResource Brush.Text}" UseLayoutRounding="True" SnapsToDevicePixels="True" WindowStartupLocation="CenterScreen">
- <Grid Background="{DynamicResource Brush.Canvas}"><Grid.RowDefinitions><RowDefinition Height="52"/><RowDefinition Height="*"/><RowDefinition Height="36"/></Grid.RowDefinitions>
-  <Grid Grid.Row="0" Margin="24,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel Orientation="Horizontal" VerticalAlignment="Center"><Border Width="24" Height="24" CornerRadius="7" Background="{DynamicResource Brush.Accent}" Margin="0,0,10,0"><StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center"><Rectangle Width="3" Height="8" Fill="White" Margin="1"/><Rectangle Width="3" Height="13" Fill="White" Margin="1"/><Rectangle Width="3" Height="6" Fill="White" Margin="1"/></StackPanel></Border><TextBlock Text="FlickVox" FontSize="24" FontWeight="SemiBold"/><Border Background="{DynamicResource Brush.SurfaceRaised}" CornerRadius="14" Padding="10,4" Margin="14,0,0,0"><StackPanel Orientation="Horizontal"><Ellipse Fill="{DynamicResource Brush.Signal}" Width="8" Height="8" Margin="0,0,7,0"/><TextBlock x:Name="StatusText" Text="Ready" FontSize="13" VerticalAlignment="Center"/></StackPanel></Border></StackPanel><StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"><Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.StrokeSubtle}" BorderThickness="1" CornerRadius="6" Padding="7,3" Margin="0,0,8,0"><TextBlock Text="Ctrl  Alt  T" Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12"/></Border><Button Content="Overlay" Click="OpenOverlay" ToolTip="Overlay · Ctrl+Alt+T" Margin="0,0,8,0"/><Button Style="{StaticResource IconButton}" ToolTip="Settings"><Path Data="M12,8A4,4 0 1,0 12,16A4,4 0 1,0 12,8M12,2V5M12,19V22M2,12H5M19,12H22" Stroke="{DynamicResource Brush.TextSecondary}" StrokeThickness="2"/></Button></StackPanel></Grid>
-  <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><Grid MaxWidth="1200" Margin="24,0" HorizontalAlignment="Center"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="16"/><ColumnDefinition Width="300"/></Grid.ColumnDefinitions><StackPanel>
-   <Border Style="{StaticResource Card}" CornerRadius="18" MinHeight="168"><Grid><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="28"/></Grid.RowDefinitions><Grid><TextBlock Text="Type something to say…" Foreground="{DynamicResource Brush.TextTertiary}" FontSize="20" IsHitTestVisible="False" Margin="0,0,0,0" VerticalAlignment="Top"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Visibility" Value="Visible"/><Style.Triggers><DataTrigger Binding="{Binding Text,ElementName=Input}" Value=""><Setter Property="Visibility" Value="Visible"/></DataTrigger><DataTrigger Binding="{Binding Text,ElementName=Input}" Value="{x:Null}"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock><TextBox x:Name="Input" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontSize="20" KeyDown="InputKeyDown" Background="Transparent"/></Grid><DockPanel Grid.Row="1"><TextBlock Text="Enter to speak   Shift+Enter for new line" Foreground="{DynamicResource Brush.TextTertiary}" FontSize="12"/><StackPanel DockPanel.Dock="Right" Orientation="Horizontal"><Button Content="Save" Height="28" Click="SavePhrase" ToolTip="Save as phrase"/><Button Style="{StaticResource IconButton}" Height="28" Click="ClearInput" ToolTip="Clear · Ctrl+L"><Path Data="M7,7 L17,17 M17,7 L7,17" Stroke="{DynamicResource Brush.TextSecondary}" StrokeThickness="2"/></Button></StackPanel></DockPanel></Grid></Border>
-   <Grid Margin="0,16,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Button Grid.Column="0" Style="{StaticResource PrimaryButton}" Click="Speak"><StackPanel Orientation="Horizontal"><Path Data="M8,5 L19,12 L8,19 Z" Fill="White" Width="16" Height="16" Margin="0,0,8,0"/><TextBlock Text="Speak" Foreground="White"/></StackPanel></Button><Button Grid.Column="1" Content="Repeat" Click="Repeat" Margin="8,0,0,0"/><StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right"><ComboBox x:Name="Voice" Width="150" DisplayMemberPath="DisplayName" SelectionChanged="VoiceChanged" ToolTip="Voice"/><ComboBox x:Name="Output" Width="170" Margin="8,0,0,0" ToolTip="Output device"/><Border Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.StrokeControl}" BorderThickness="1" CornerRadius="10" Padding="10,0" Height="40" Margin="8,0,0,0"><StackPanel Orientation="Horizontal"><TextBlock Text="Speed" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,8,0"/><TextBlock x:Name="SpeedValue" Text="1.00x"/></StackPanel></Border></StackPanel></Grid>
-   <Border Style="{StaticResource Card}" Margin="0,16,0,0"><StackPanel><TextBlock Text="Speech settings" Style="{StaticResource SectionTitle}"/><TextBlock Text="Runs on your PC. Nothing is uploaded." Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,4,0,12"/><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Speech speed" Style="{StaticResource FieldLabel}"/><DockPanel><TextBlock x:Name="SpeedValue2" DockPanel.Dock="Right" Text="1.00x" Foreground="{DynamicResource Brush.AccentText}"/><Slider x:Name="Speed" Minimum="0.6" Maximum="1.8" Value="1" ValueChanged="SpeedChanged"/></DockPanel></StackPanel><StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom"><Button Content="Preview voice" Click="Preview"/><Button Content="Manage voices" Click="OpenVoiceManager" Margin="8,0,0,0"/></StackPanel></Grid></StackPanel></Border>
-  </StackPanel><Border Grid.Column="2" Style="{StaticResource Card}" VerticalAlignment="Top"><Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="12"/><RowDefinition Height="*"/></Grid.RowDefinitions><StackPanel Orientation="Horizontal"><Button x:Name="SavedTab" Content="Saved" Click="ShowSaved"/><Button x:Name="RecentTab" Content="Recent" Click="ShowRecent" Margin="8,0,0,0"/></StackPanel><Grid Grid.Row="2"><StackPanel x:Name="SavedPanel"><TextBlock Text="Saved phrases" Style="{StaticResource SectionTitle}"/><TextBlock x:Name="SavedEmpty" Text="No saved phrases yet. Save messages you use frequently to access them faster." TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,8,0,8"/><ListBox x:Name="Phrases" DisplayMemberPath="Name" MouseDoubleClick="PhraseSpeak"/></StackPanel><StackPanel x:Name="RecentPanel" Visibility="Collapsed"><TextBlock Text="Recent messages" Style="{StaticResource SectionTitle}"/><TextBlock x:Name="RecentEmpty" Text="No recent messages. Messages you speak will appear here." TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,8,0,8"/><ListBox x:Name="History" MouseDoubleClick="HistorySpeak"/></StackPanel></Grid></Grid></Border></Grid></ScrollViewer>
-  <Grid Grid.Row="2" Margin="24,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><CheckBox x:Name="HideAfter" Content="Hide overlay after speaking" IsChecked="True" VerticalAlignment="Center"/><TextBlock Grid.Column="1" Text="Esc to stop speech" Foreground="{DynamicResource Brush.TextTertiary}" VerticalAlignment="Center"/></Grid>
- </Grid>
+<Window x:Class="FlickVox.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="FlickVox" Width="1000" Height="640" MinWidth="560" MinHeight="480"
+        WindowStartupLocation="CenterScreen" SizeChanged="WindowSizeChanged"
+        Background="{DynamicResource Brush.Canvas}" Foreground="{DynamicResource Brush.Text}"
+        TextElement.Foreground="{DynamicResource Brush.Text}" UseLayoutRounding="True"
+        SnapsToDevicePixels="True" PreviewKeyDown="WindowPreviewKeyDown">
+  <Window.Resources>
+    <Style x:Key="Chip" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+      <Setter Property="Height" Value="40"/>
+      <Setter Property="MinWidth" Value="130"/>
+      <Setter Property="HorizontalContentAlignment" Value="Left"/>
+    </Style>
+    <Style x:Key="Tab" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+      <Setter Property="Width" Value="110"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.StrokeSubtle}"/>
+    </Style>
+  </Window.Resources>
+  <Grid Background="{DynamicResource Brush.Canvas}">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+
+    <Grid Margin="24,16,24,16">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <Border Width="28" Height="28" CornerRadius="8" Background="{DynamicResource Brush.Accent}" Margin="0,0,10,0">
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Rectangle Width="3" Height="8" Fill="White" Margin="1"/>
+            <Rectangle Width="3" Height="14" Fill="White" Margin="1"/>
+            <Rectangle Width="3" Height="6" Fill="White" Margin="1"/>
+          </StackPanel>
+        </Border>
+        <TextBlock Text="FlickVox" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center"/>
+        <Border Background="{DynamicResource Brush.SurfaceRaised}" CornerRadius="14" Padding="10,4" Margin="14,0,0,0" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal">
+            <Ellipse x:Name="StatusDot" Fill="{DynamicResource Brush.Signal}" Width="7" Height="7" Margin="0,0,7,0" VerticalAlignment="Center"/>
+            <TextBlock x:Name="StatusText" Text="Ready" FontSize="12" VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite"/>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+        <StackPanel x:Name="HotkeyHint" Orientation="Horizontal" Margin="0,0,12,0" VerticalAlignment="Center">
+          <Border Background="{DynamicResource Brush.SurfaceRaised}" CornerRadius="6" Padding="6,3" Margin="0,0,4,0"><TextBlock Text="Ctrl" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}"/></Border>
+          <Border Background="{DynamicResource Brush.SurfaceRaised}" CornerRadius="6" Padding="6,3" Margin="0,0,4,0"><TextBlock Text="Alt" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}"/></Border>
+          <Border Background="{DynamicResource Brush.SurfaceRaised}" CornerRadius="6" Padding="6,3"><TextBlock Text="T" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}"/></Border>
+        </StackPanel>
+        <Button Click="OpenOverlay" ToolTip="Overlay · Ctrl+Alt+T" AutomationProperties.Name="Open overlay">
+          <StackPanel Orientation="Horizontal">
+            <Path Data="M 2,4 L 14,4 14,14 2,14 Z M 8,1 L 17,1 17,10" Stroke="{DynamicResource Brush.Text}" StrokeThickness="1.7" Width="17" Height="17" Margin="0,0,8,0"/>
+            <TextBlock Text="Overlay" VerticalAlignment="Center"/>
+          </StackPanel>
+        </Button>
+      </StackPanel>
+    </Grid>
+
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel MaxWidth="1200" HorizontalAlignment="Center" Margin="24,0,24,16">
+        <Border x:Name="Notice" Visibility="Collapsed" Background="{DynamicResource Brush.SurfaceRaised}"
+                BorderBrush="{DynamicResource Brush.StrokeControl}" BorderThickness="1" CornerRadius="10" Padding="12,8" Margin="0,0,0,16">
+          <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <TextBlock x:Name="NoticeText" TextWrapping="Wrap" Foreground="{DynamicResource Brush.Text}"/>
+            <Button x:Name="NoticeAction" Grid.Column="1" Content="Manage voices" Click="OpenVoiceManager" Margin="12,0,0,0" Visibility="Collapsed"/>
+          </Grid>
+        </Border>
+        <Grid x:Name="Workspace">
+          <Grid.ColumnDefinitions><ColumnDefinition Width="*" MinWidth="0"/><ColumnDefinition Width="16"/><ColumnDefinition Width="320"/></Grid.ColumnDefinitions>
+          <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+
+          <StackPanel x:Name="ComposerColumn" Grid.Column="0" MinWidth="0">
+            <Border Style="{StaticResource Card}" CornerRadius="18" MinHeight="190" BorderBrush="{DynamicResource Brush.StrokeSubtle}">
+              <Grid><Grid.RowDefinitions><RowDefinition Height="140"/><RowDefinition Height="36"/></Grid.RowDefinitions>
+                <Grid>
+                  <TextBox x:Name="Input" FontSize="20" AcceptsReturn="True" TextWrapping="Wrap"
+                           VerticalScrollBarVisibility="Auto" KeyDown="InputKeyDown" TextChanged="InputChanged"
+                           AutomationProperties.Name="Text to speak"/>
+                  <TextBlock x:Name="InputPlaceholder" Text="Type something to say…" FontSize="20"
+                             Foreground="{DynamicResource Brush.TextTertiary}" IsHitTestVisible="False"/>
+                </Grid>
+                <Grid Grid.Row="1" Margin="0,8,0,0">
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <TextBlock Text="Enter to speak  ·  Shift+Enter for new line" FontSize="12"
+                             Foreground="{DynamicResource Brush.TextTertiary}" VerticalAlignment="Center"
+                             TextTrimming="CharacterEllipsis"/>
+                  <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button x:Name="SaveButton" Content="Save" Click="SavePhrase" ToolTip="Save as phrase"
+                            Height="28" Visibility="Collapsed" Margin="8,0,8,0"/>
+                    <Button x:Name="ClearButton" Style="{StaticResource IconButton}" Height="28"
+                            Click="ClearInput" ToolTip="Clear · Ctrl+L" AutomationProperties.Name="Clear text"
+                            Visibility="Collapsed">
+                      <Path Data="M 4,4 L 16,16 M 16,4 L 4,16" Stroke="{DynamicResource Brush.TextSecondary}"
+                            StrokeThickness="2" Width="20" Height="20"/>
+                    </Button>
+                  </StackPanel>
+                </Grid>
+              </Grid>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+              <Button x:Name="SpeakButton" Style="{StaticResource PrimaryButton}" Click="PrimaryAction">
+                <StackPanel Orientation="Horizontal">
+                  <Path x:Name="PrimaryIcon" Data="M 4,2 L 16,10 4,18 Z" Fill="White" Width="20" Height="20" Margin="0,0,8,0"/>
+                  <TextBlock x:Name="PrimaryLabel" Text="Speak" Foreground="White" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button x:Name="RepeatButton" Content="Repeat" Click="Repeat" IsEnabled="False" Margin="8,0,0,0"
+                      ToolTip="Speak the last message again"/>
+            </StackPanel>
+
+            <WrapPanel x:Name="ConfigurationChips" Margin="0,16,0,0" ItemHeight="44">
+              <Grid Margin="0,0,8,8">
+                <Button x:Name="VoiceChip" Style="{StaticResource Chip}" Click="ToggleVoiceFlyout" ToolTip="Choose voice">
+                  <StackPanel Orientation="Horizontal"><TextBlock Text="Voice  " Foreground="{DynamicResource Brush.TextSecondary}"/>
+                    <TextBlock x:Name="VoiceValue" Text="Ryan · Medium" TextTrimming="CharacterEllipsis" MaxWidth="140"/>
+                  </StackPanel>
+                </Button>
+                <Popup x:Name="VoiceFlyout" PlacementTarget="{Binding ElementName=VoiceChip}" Placement="Bottom"
+                       StaysOpen="False" AllowsTransparency="True" Opened="FlyoutOpened">
+                  <Border Style="{StaticResource Card}" Width="300" Padding="16" BorderBrush="{DynamicResource Brush.StrokeControl}">
+                    <StackPanel><TextBlock Text="Voice" Style="{StaticResource SectionTitle}" Margin="0,0,0,8"/>
+                      <ListBox x:Name="Voice" DisplayMemberPath="DisplayName" SelectionChanged="VoiceChanged"
+                               MaxHeight="220" AutomationProperties.Name="Voice"/>
+                      <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                        <Button Content="Preview" Click="Preview"/>
+                        <Button Content="Manage voices" Click="OpenVoiceManager" Margin="8,0,0,0"/>
+                      </StackPanel>
+                    </StackPanel>
+                  </Border>
+                </Popup>
+              </Grid>
+              <Grid Margin="0,0,8,8">
+                <Button x:Name="OutputChip" Style="{StaticResource Chip}" Click="ToggleOutputFlyout" ToolTip="Choose output device">
+                  <StackPanel Orientation="Horizontal"><TextBlock Text="Output  " Foreground="{DynamicResource Brush.TextSecondary}"/>
+                    <TextBlock x:Name="OutputValue" Text="Default output" TextTrimming="CharacterEllipsis" MaxWidth="150"/>
+                  </StackPanel>
+                </Button>
+                <Popup x:Name="OutputFlyout" PlacementTarget="{Binding ElementName=OutputChip}" Placement="Bottom"
+                       StaysOpen="False" AllowsTransparency="True" Opened="FlyoutOpened">
+                  <Border Style="{StaticResource Card}" Width="320" Padding="16" BorderBrush="{DynamicResource Brush.StrokeControl}">
+                    <StackPanel><TextBlock Text="Output device" Style="{StaticResource SectionTitle}" Margin="0,0,0,8"/>
+                      <ListBox x:Name="Output" SelectionChanged="OutputChanged" MaxHeight="220"
+                               AutomationProperties.Name="Output device"/>
+                    </StackPanel>
+                  </Border>
+                </Popup>
+              </Grid>
+              <Grid Margin="0,0,8,8">
+                <Button x:Name="SpeedChip" Style="{StaticResource Chip}" Click="ToggleSpeedFlyout" ToolTip="Adjust speech speed">
+                  <StackPanel Orientation="Horizontal"><TextBlock Text="Speed  " Foreground="{DynamicResource Brush.TextSecondary}"/>
+                    <TextBlock x:Name="SpeedValue" Text="1.00×"/>
+                  </StackPanel>
+                </Button>
+                <Popup x:Name="SpeedFlyout" PlacementTarget="{Binding ElementName=SpeedChip}" Placement="Bottom"
+                       StaysOpen="False" AllowsTransparency="True" Opened="FlyoutOpened">
+                  <Border Style="{StaticResource Card}" Width="280" Padding="16" BorderBrush="{DynamicResource Brush.StrokeControl}">
+                    <StackPanel><TextBlock Text="Speech speed" Style="{StaticResource SectionTitle}" Margin="0,0,0,12"/>
+                      <Slider x:Name="Speed" Minimum="0.6" Maximum="1.8" Value="1"
+                              ValueChanged="SpeedChanged" AutomationProperties.Name="Speech speed"/>
+                      <TextBlock x:Name="SpeedFlyoutValue" Text="1.00×" HorizontalAlignment="Right"
+                                 Foreground="{DynamicResource Brush.AccentText}"/>
+                    </StackPanel>
+                  </Border>
+                </Popup>
+              </Grid>
+            </WrapPanel>
+          </StackPanel>
+
+          <Border x:Name="Rail" Grid.Column="2" Style="{StaticResource Card}" VerticalAlignment="Top" MinHeight="180">
+            <StackPanel>
+              <Border Background="{DynamicResource Brush.SurfaceRaised}" CornerRadius="10" Padding="4" HorizontalAlignment="Left">
+                <StackPanel Orientation="Horizontal">
+                  <Button x:Name="SavedTab" Style="{StaticResource Tab}" Content="Saved" Click="ShowSaved"/>
+                  <Button x:Name="RecentTab" Style="{StaticResource Tab}" Content="Recent" Click="ShowRecent" Margin="4,0,0,0"/>
+                </StackPanel>
+              </Border>
+              <StackPanel x:Name="SavedPanel" Margin="0,16,0,0">
+                <TextBlock Text="Saved phrases" Style="{StaticResource SectionTitle}"/>
+                <TextBlock x:Name="SavedEmpty" Text="No saved phrases yet. Save messages you use frequently to access them faster."
+                           TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,12,0,0"/>
+                <ListBox x:Name="Phrases" DisplayMemberPath="Name" MouseDoubleClick="PhraseSpeak"
+                         AutomationProperties.Name="Saved phrases" Margin="0,8,0,0"/>
+              </StackPanel>
+              <StackPanel x:Name="RecentPanel" Visibility="Collapsed" Margin="0,16,0,0">
+                <TextBlock Text="Recent messages" Style="{StaticResource SectionTitle}"/>
+                <TextBlock x:Name="RecentEmpty" Text="No recent messages. Messages you speak will appear here."
+                           TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,12,0,0"/>
+                <ListBox x:Name="History" MouseDoubleClick="HistorySpeak"
+                         AutomationProperties.Name="Recent messages" Margin="0,8,0,0"/>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </Grid>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Grid Grid.Row="2" Margin="24,8,24,12">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <CheckBox x:Name="HideAfter" Content="Hide overlay after speaking" IsChecked="True" VerticalAlignment="Center"/>
+      <TextBlock Grid.Column="1" Text="Esc to stop speech" Foreground="{DynamicResource Brush.TextTertiary}"
+                 VerticalAlignment="Center" Margin="16,0,0,0"/>
+    </Grid>
+  </Grid>
 </Window>
