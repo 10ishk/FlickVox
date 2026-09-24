@@ -8,8 +8,8 @@ WPF was selected over WinUI 3 for version 0.1.0: it has a smaller, more direct d
 
 ## Features
 
-- Compact composer-first main window with voice/output/speed flyouts, cached repeat, shared recent messages, and editable saved phrases.
-- Compact draggable overlay, summoned with `Ctrl+Alt+T`; Enter speaks, Shift+Enter inserts a line, and Esc hides/stops. Expand the same overlay for voice/output and one-click phrases.
+- One compact WPF window: a 360 × 48 quick-speaking pill summoned with `Ctrl+Alt+T`, expandable in place into a small workspace. It keeps the same draft and speech state in both modes.
+- Expanded workspace with saved phrase chips (local `Alt+1`–`Alt+9`), voice/output/speed popovers, recent-message popover and cached Repeat. Enter speaks, Shift+Enter inserts a line, and Esc stops or dismisses.
 - Piper subprocess integration with cancellation and temporary WAV cleanup.
 - Six supported Piper voices: Ryan Low/Medium/High and Lessac Low/Medium/High.
 - Voice manager that downloads model and JSON pairs atomically; settings and phrases stored under `%LOCALAPPDATA%\FlickVox`.

@@ -14,6 +14,14 @@ public sealed class AppSettings
     public bool PhrasePanelExpanded { get; set; } = true;
     public bool ShowSavedPhrases { get; set; } = true;
     public bool OverlayExpanded { get; set; }
+    public bool UnifiedWindowMigrated { get; set; }
+    public bool UnifiedExpanded { get; set; } = true;
+    public double UnifiedLeft { get; set; } = double.NaN;
+    public double UnifiedTop { get; set; } = double.NaN;
+    public double UnifiedQuickWidth { get; set; } = 360;
+    public double UnifiedQuickHeight { get; set; } = 48;
+    public double UnifiedExpandedWidth { get; set; } = 410;
+    public double UnifiedExpandedHeight { get; set; } = 300;
     public bool FirstSpeechConfirmed { get; set; }
     public bool FirstRunGuidanceDismissed { get; set; }
     public bool HideOverlayAfterSpeaking { get; set; } = true;

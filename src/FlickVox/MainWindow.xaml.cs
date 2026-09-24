@@ -1,20 +1,24 @@
+using System.Runtime.InteropServices;
 using System.Windows.Controls.Primitives;
+using System.Windows.Interop;
 using System.Windows.Media;
-using FlickVox.Infrastructure;
 using FlickVox.Models;
 using FlickVox.Services;
 using NAudio.Wave;
+using Screen = System.Windows.Forms.Screen;
 using NotifyIcon = System.Windows.Forms.NotifyIcon;
 using ContextMenuStrip = System.Windows.Forms.ContextMenuStrip;
 using Brush = System.Windows.Media.Brush;
-using FontFamily = System.Windows.Media.FontFamily;
 using Button = System.Windows.Controls.Button;
 using MessageBox = System.Windows.MessageBox;
+using FontFamily = System.Windows.Media.FontFamily;
 
 namespace FlickVox;
 
 public partial class MainWindow : Window
 {
+    [DllImport("user32.dll")] static extern nint GetForegroundWindow();
+
     readonly SettingsService _settings = new();
     readonly VoiceManager _voices = new();
     readonly AudioPlaybackService _audio = new();
@@ -22,43 +26,74 @@ public partial class MainWindow : Window
     readonly HotkeyService _hotkey = new();
     readonly HistoryService _history;
     readonly PhraseService _phrases = new();
-    OverlayWindow? _overlay;
     NotifyIcon? _tray;
-    bool _isBusy;
+    bool _expanded;
+    bool _busy;
     bool _exitRequested;
+    bool _positionReady;
+    bool _uiReady;
     int _speechVersion;
+    int _historyCursor = -1;
+    UiState _state = UiState.Idle;
+
+    enum UiState { Idle, Typing, Preparing, Speaking, Error }
+    sealed record VoiceOption(VoiceDefinition Voice, string Label);
+    sealed record PhraseChip(SavedPhrase Phrase, string Shortcut, string Name, string Hint);
 
     public MainWindow()
     {
         InitializeComponent();
-        SourceInitialized += (_, _) => WindowBackdrop.ApplyDarkTitleBar(this);
+        MigrateWindowSettings();
         _speech = new PiperSpeechService(_voices, _audio, _settings);
         _speech.LastMessageChanged += () => Dispatcher.Invoke(() => RepeatButton.IsEnabled = true);
         _history = new HistoryService(_settings);
-        Voice.ItemsSource = Services.VoiceManager.Voices;
-        Voice.SelectedItem = Services.VoiceManager.Voices.FirstOrDefault(v => v.Id == _settings.Current.VoiceId)
-                             ?? Services.VoiceManager.Voices[0];
+        Voice.ItemsSource = VoiceManager.Voices.Select(v => new VoiceOption(v, VoiceLabel(v))).ToList();
+        SelectCurrentVoice();
         Speed.Value = _settings.Current.Speed;
         ApplyComposerTypography();
         Output.Items.Add("Default Windows output");
-        for (var i = 0; i < WaveOut.DeviceCount; i++)
-            Output.Items.Add(WaveOut.GetCapabilities(i).ProductName);
+        for (var i = 0; i < WaveOut.DeviceCount; i++) Output.Items.Add(WaveOut.GetCapabilities(i).ProductName);
         Output.SelectedIndex = Math.Clamp(_settings.Current.OutputDevice + 1, 0, Output.Items.Count - 1);
-        Phrases.ItemsSource = _phrases.Items;
         History.ItemsSource = _history.Items;
-        _phrases.Items.CollectionChanged += (_, _) => RefreshEmptyStates();
-        _history.Items.CollectionChanged += (_, _) => RefreshEmptyStates();
-        RefreshEmptyStates();
-        UpdateComposerActions();
-        SetActiveTab(_settings.Current.ShowSavedPhrases);
-        UpdatePhrasePanel();
+        _history.Items.CollectionChanged += (_, _) => RecentEmpty.Visibility = _history.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        RecentEmpty.Visibility = _history.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        _phrases.Items.CollectionChanged += (_, _) => RefreshPhrases();
+        RefreshPhrases();
+        Topmost = _settings.Current.AlwaysOnTop;
+        UpdatePin();
+        SetMode(_settings.Current.UnifiedExpanded, persist: false);
+        UpdatePlaceholder();
+        _uiReady = true;
         Loaded += OnLoaded;
+        LocationChanged += (_, _) => { if (_positionReady && IsVisible) SavePosition(); };
         Closing += OnClosing;
+    }
+
+    static string VoiceLabel(VoiceDefinition voice)
+    {
+        var parts = voice.Id.Split('-');
+        var quality = parts[^1] switch { "low" => "Fast", "high" => "Best quality", _ => "Balanced" };
+        return $"{voice.DisplayName.Split(' ')[0]} · {quality}";
+    }
+
+    void MigrateWindowSettings()
+    {
+        var settings = _settings.Current;
+        if (settings.UnifiedWindowMigrated) return;
+        settings.UnifiedLeft = settings.OverlayLeft;
+        settings.UnifiedTop = settings.OverlayTop;
+        if (settings.OverlayWidth is not (450 or 520 or 640))
+            settings.UnifiedQuickWidth = Math.Clamp(settings.OverlayWidth, 320, 800);
+        if (settings.OverlayHeight is not (72 or 80 or 112))
+            settings.UnifiedQuickHeight = Math.Clamp(settings.OverlayHeight, 48, 168);
+        settings.UnifiedWindowMigrated = true;
+        _settings.Save();
     }
 
     void OnLoaded(object sender, RoutedEventArgs e)
     {
-        try { _hotkey.Register(this, _settings.Current.Hotkey); _hotkey.Pressed += (_, _) => ShowOverlay(); }
+        PlaceOnVisibleMonitor(Screen.FromHandle(GetForegroundWindow()));
+        try { _hotkey.Register(this, _settings.Current.Hotkey); _hotkey.Pressed += (_, _) => ShowQuick(); }
         catch (Exception ex) { ShowNotice(ex.Message, false); }
         CreateTray();
         CheckReadiness();
@@ -70,8 +105,8 @@ public partial class MainWindow : Window
         var trayPath = Path.Combine(AppContext.BaseDirectory, "Assets", "FlickVoxTray.ico");
         _tray = new NotifyIcon { Text = "FlickVox", Icon = new System.Drawing.Icon(trayPath), Visible = true };
         var menu = new ContextMenuStrip();
-        menu.Items.Add("Open FlickVox", null, (_, _) => { Show(); Activate(); });
-        menu.Items.Add("Open compact overlay", null, (_, _) => ShowOverlay());
+        menu.Items.Add("Open FlickVox", null, (_, _) => ShowWorkspace());
+        menu.Items.Add("Open quick pill", null, (_, _) => ShowQuick());
         menu.Items.Add("Stop speech", null, (_, _) => StopSpeech());
         menu.Items.Add("Repeat last message", null, async (_, _) => await RepeatAsync());
         menu.Items.Add("Settings", null, (_, _) => OpenSettings(this, new RoutedEventArgs()));
@@ -82,46 +117,196 @@ public partial class MainWindow : Window
             System.Windows.Application.Current.Shutdown();
         });
         _tray.ContextMenuStrip = menu;
-        _tray.DoubleClick += (_, _) => { Show(); Activate(); };
+        _tray.DoubleClick += (_, _) => ShowWorkspace();
     }
 
-    void SetStatus(string status)
+    void ShowQuick()
     {
-        StatusText.Text = status switch
+        var foreground = Screen.FromHandle(GetForegroundWindow());
+        SetMode(false);
+        if (!IsVisible) { PlaceOnVisibleMonitor(foreground); Show(); }
+        Activate();
+        Input.Focus();
+    }
+
+    void ShowWorkspace()
+    {
+        var foreground = Screen.FromHandle(GetForegroundWindow());
+        SetMode(true);
+        if (!IsVisible) { PlaceOnVisibleMonitor(foreground); Show(); }
+        Activate();
+        Input.Focus();
+    }
+
+    void SetMode(bool expanded, bool persist = true)
+    {
+        _expanded = expanded;
+        _positionReady = false;
+        Header.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
+        SavedArea.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
+        Footer.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
+        ExpandQuickButton.Visibility = expanded ? Visibility.Collapsed : Visibility.Visible;
+        Notice.Visibility = expanded && NoticeText.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        Shell.CornerRadius = new CornerRadius(expanded ? 14 : 24);
+        ComposerCard.CornerRadius = new CornerRadius(expanded ? 10 : 24);
+        ComposerCard.Margin = expanded ? new Thickness(12, 5, 12, 7) : new Thickness();
+        ComposerCard.Height = expanded ? 84 : Math.Clamp(_settings.Current.UnifiedQuickHeight, 48, 168) - 2;
+        ComposerCard.BorderThickness = expanded ? new Thickness(1) : new Thickness(0);
+        MinWidth = expanded ? 380 : 320;
+        Width = expanded ? Math.Clamp(_settings.Current.UnifiedExpandedWidth, 380, 800)
+                         : Math.Clamp(_settings.Current.UnifiedQuickWidth, 320, 800);
+        Height = expanded ? Math.Clamp(_settings.Current.UnifiedExpandedHeight, 260, 600)
+                          : Math.Clamp(_settings.Current.UnifiedQuickHeight, 48, 168);
+        if (IsVisible) ClampToWorkingArea();
+        _positionReady = true;
+        if (persist)
         {
-            "Generating" => "Preparing",
-            "Speaking" => "Speaking",
-            "Ready" => DependenciesReady() ? "Ready" : "Voice not ready",
-            "Stopped" => DependenciesReady() ? "Ready" : "Voice not ready",
+            _settings.Current.UnifiedExpanded = expanded;
+            _settings.Save();
+        }
+    }
+
+    void Expand(object sender, RoutedEventArgs e) => SetMode(true);
+    void Collapse(object sender, RoutedEventArgs e) => SetMode(false);
+    void CloseToTray(object sender, RoutedEventArgs e) { SavePosition(); Hide(); }
+    void TogglePin(object sender, RoutedEventArgs e)
+    {
+        Topmost = !Topmost;
+        _settings.Current.AlwaysOnTop = Topmost;
+        _settings.Save();
+        UpdatePin();
+    }
+    void UpdatePin()
+    {
+        PinButton.Background = (Brush)FindResource(Topmost ? "Brush.AccentSubtle" : "Brush.Canvas");
+        PinButton.ToolTip = Topmost ? "Unpin FlickVox" : "Keep FlickVox on top";
+    }
+    void Drag(object sender, MouseButtonEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed) return;
+        DragMove();
+        SavePosition();
+        e.Handled = true;
+    }
+
+    void PlaceOnVisibleMonitor(Screen foreground)
+    {
+        var dpi = VisualTreeHelper.GetDpi(this);
+        var sx = dpi.DpiScaleX == 0 ? 1 : dpi.DpiScaleX;
+        var sy = dpi.DpiScaleY == 0 ? 1 : dpi.DpiScaleY;
+        var saved = _settings.Current;
+        var savedScreen = double.IsFinite(saved.UnifiedLeft) && double.IsFinite(saved.UnifiedTop)
+            ? Screen.AllScreens.FirstOrDefault(s =>
+            {
+                var area = s.WorkingArea;
+                return saved.UnifiedLeft * sx >= area.Left && saved.UnifiedLeft * sx < area.Right &&
+                       saved.UnifiedTop * sy >= area.Top && saved.UnifiedTop * sy < area.Bottom;
+            })
+            : null;
+        var area = (savedScreen ?? foreground).WorkingArea;
+        _positionReady = false;
+        Left = savedScreen is not null
+            ? Math.Clamp(saved.UnifiedLeft * sx, area.Left, Math.Max(area.Left, area.Right - Width * sx)) / sx
+            : (area.Left + (area.Width - Width * sx) / 2) / sx;
+        Top = savedScreen is not null
+            ? Math.Clamp(saved.UnifiedTop * sy, area.Top, Math.Max(area.Top, area.Bottom - Height * sy)) / sy
+            : (_expanded ? area.Top + (area.Height - Height * sy) / 2 : area.Bottom - Height * sy - area.Height * .12) / sy;
+        _positionReady = true;
+    }
+    void ClampToWorkingArea()
+    {
+        var handle = new WindowInteropHelper(this).Handle;
+        var area = Screen.FromHandle(handle).WorkingArea;
+        var dpi = VisualTreeHelper.GetDpi(this);
+        var sx = dpi.DpiScaleX == 0 ? 1 : dpi.DpiScaleX;
+        var sy = dpi.DpiScaleY == 0 ? 1 : dpi.DpiScaleY;
+        Left = Math.Clamp(Left * sx, area.Left, Math.Max(area.Left, area.Right - Width * sx)) / sx;
+        Top = Math.Clamp(Top * sy, area.Top, Math.Max(area.Top, area.Bottom - Height * sy)) / sy;
+    }
+    void SavePosition()
+    {
+        if (!_positionReady || !double.IsFinite(Left) || !double.IsFinite(Top)) return;
+        _settings.Current.UnifiedLeft = Left;
+        _settings.Current.UnifiedTop = Top;
+        _settings.Save();
+    }
+
+    bool DependenciesReady() =>
+        File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "FlickVox", "runtime", "piper", "piper.exe")) && _voices.IsInstalled(_settings.Current.VoiceId);
+
+    void CheckReadiness()
+    {
+        if (!DependenciesReady())
+        {
+            ShowNotice("Piper or the selected voice is missing.", true);
+            return;
+        }
+        if (!_settings.Current.FirstSpeechConfirmed && !_settings.Current.FirstRunGuidanceDismissed)
+        {
+            NoticeText.Text = "Ready for a first audio test.";
+            NoticeAction.Visibility = Visibility.Visible;
+            if (_expanded) Notice.Visibility = Visibility.Visible;
+        }
+        else { NoticeText.Text = ""; Notice.Visibility = Visibility.Collapsed; }
+        SetUiState(string.IsNullOrEmpty(Input.Text) ? UiState.Idle : UiState.Typing);
+    }
+
+    void SetUiState(UiState state)
+    {
+        _state = state;
+        _busy = state is UiState.Preparing or UiState.Speaking;
+        StatusText.Text = state switch
+        {
+            UiState.Idle when !DependenciesReady() => "Setup",
+            UiState.Idle => "Idle",
+            UiState.Typing => "Typing",
+            UiState.Preparing => "Preparing",
+            UiState.Speaking => "Speaking",
             _ => "Error"
         };
-        StatusDot.Fill = (Brush)FindResource(status == "Speaking" || ((status is "Ready" or "Stopped") && DependenciesReady())
-            ? "Brush.Signal" : "Brush.AccentText");
-        if (status == "Speaking") ComposerCard.BorderBrush = (Brush)FindResource("Brush.Signal");
-        else ComposerCard.ClearValue(System.Windows.Controls.Border.BorderBrushProperty);
-        if (status is "Ready" or "Stopped") SetBusy(false);
-        else if (status is "Generating" or "Speaking") SetBusy(true);
+        var dot = state switch
+        {
+            UiState.Speaking => "Brush.Signal",
+            UiState.Error => "Brush.Danger",
+            _ => "Brush.TextTertiary"
+        };
+        StatusDot.Fill = (Brush)FindResource(dot);
+        ComposerCard.BorderBrush = (Brush)FindResource(state switch
+        {
+            UiState.Speaking => "Brush.SignalBorder",
+            UiState.Error => "Brush.Danger",
+            _ => "Brush.StrokeControl"
+        });
+        SendIcon.Data = (Geometry)FindResource(_busy ? "Icon.Stop" : "Icon.Speaker2");
+        SendButton.Background = (Brush)FindResource(state switch
+        {
+            UiState.Speaking => "Brush.Canvas",
+            UiState.Preparing => "Brush.SurfaceHover",
+            _ => "Brush.PrimaryAction"
+        });
+        SendButton.BorderBrush = (Brush)FindResource(state == UiState.Speaking ? "Brush.Signal" : "Brush.PrimaryAction");
+        SendIcon.Fill = (Brush)FindResource(state switch
+        {
+            UiState.Speaking => "Brush.Signal",
+            UiState.Preparing => "Brush.TextSecondary",
+            _ => "Brush.OnPrimary"
+        });
+        SendButton.ToolTip = _busy ? "Stop speech · Esc" : "Speak · Enter";
+        System.Windows.Automation.AutomationProperties.SetName(SendButton, _busy ? "Stop speech" : "Speak");
     }
-
-    void SetBusy(bool busy)
-    {
-        _isBusy = busy;
-        PrimaryLabel.Text = busy ? "Stop" : "Speak";
-        PrimaryIcon.Data = (Geometry)FindResource(busy ? "Icon.Stop" : "Icon.Play");
-    }
-
-    void ShowNotice(string message, bool voiceAction)
+    void ShowNotice(string message, bool setupAction)
     {
         NoticeText.Text = message;
-        NoticeAction.Visibility = voiceAction ? Visibility.Visible : Visibility.Collapsed;
+        NoticeAction.Visibility = setupAction ? Visibility.Visible : Visibility.Collapsed;
+        if (!_expanded) SetMode(true);
         Notice.Visibility = Visibility.Visible;
-        StatusText.Text = voiceAction ? "Voice not ready" : "Error";
-        StatusDot.Fill = (Brush)FindResource("Brush.TextTertiary");
-        ComposerCard.BorderBrush = (Brush)FindResource("Brush.Danger");
+        SetUiState(UiState.Error);
     }
     void DismissNotice(object sender, RoutedEventArgs e)
     {
         Notice.Visibility = Visibility.Collapsed;
+        NoticeText.Text = "";
         if (DependenciesReady() && !_settings.Current.FirstSpeechConfirmed)
         {
             _settings.Current.FirstRunGuidanceDismissed = true;
@@ -129,117 +314,192 @@ public partial class MainWindow : Window
         }
     }
 
-    bool DependenciesReady() =>
-        File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FlickVox", "runtime", "piper", "piper.exe"))
-        && _voices.IsInstalled(_settings.Current.VoiceId);
-
-    void CheckReadiness()
+    void SendOrStop(object sender, RoutedEventArgs e)
     {
-        if (DependenciesReady())
-        {
-            SetStatus("Ready");
-            if (!_settings.Current.FirstSpeechConfirmed && !_settings.Current.FirstRunGuidanceDismissed)
-            {
-                NoticeText.Text = "Ready for a first audio test.";
-                NoticeAction.Visibility = Visibility.Visible;
-                Notice.Visibility = Visibility.Visible;
-            }
-            else Notice.Visibility = Visibility.Collapsed;
-            return;
-        }
-        ShowNotice("Piper or the selected voice is missing.", true);
+        if (_busy) StopSpeech();
+        else _ = SpeakAsync(Input.Text);
     }
-
-    async void PrimaryAction(object sender, RoutedEventArgs e)
-    {
-        if (_isBusy) { StopSpeech(); return; }
-        await SpeakAsync(Input.Text);
-    }
-
     void StopSpeech()
     {
         _speechVersion++;
         _speech.Stop();
-        SetStatus("Ready");
+        SetUiState(string.IsNullOrEmpty(Input.Text) ? UiState.Idle : UiState.Typing);
     }
-
     async Task SpeakAsync(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return;
         var version = ++_speechVersion;
         Notice.Visibility = Visibility.Collapsed;
         _history.Add(text);
-        SetBusy(true);
-        SetStatus("Generating");
-        try { await _speech.SpeakAsync(text, s => Dispatcher.Invoke(() => { if (version == _speechVersion) SetStatus(s); })); }
-        catch (OperationCanceledException) { if (version == _speechVersion) SetStatus("Ready"); }
-        catch (Exception ex) { if (version == _speechVersion) ShowNotice(ex.Message, ex.Message.Contains("voice", StringComparison.OrdinalIgnoreCase)); }
-        finally { if (version == _speechVersion) { SetBusy(false); RepeatButton.IsEnabled = _speech.LastText is not null; if (StatusText.Text is "Preparing" or "Speaking") SetStatus("Ready"); } }
+        _historyCursor = -1;
+        SetUiState(UiState.Preparing);
+        try
+        {
+            await _speech.SpeakAsync(text, s => Dispatcher.Invoke(() =>
+            {
+                if (version != _speechVersion) return;
+                SetUiState(s switch { "Speaking" => UiState.Speaking, "Ready" => string.IsNullOrEmpty(Input.Text) ? UiState.Idle : UiState.Typing, _ => UiState.Preparing });
+            }));
+            if (version == _speechVersion && !_expanded && _settings.Current.HideOverlayAfterSpeaking)
+            {
+                Input.Clear();
+                SavePosition();
+                Hide();
+            }
+        }
+        catch (OperationCanceledException) { if (version == _speechVersion) SetUiState(UiState.Typing); }
+        catch (Exception ex) { if (version == _speechVersion) ShowNotice(ex.Message, !DependenciesReady()); }
+        finally
+        {
+            if (version == _speechVersion && _state is UiState.Preparing or UiState.Speaking)
+                SetUiState(string.IsNullOrEmpty(Input.Text) ? UiState.Idle : UiState.Typing);
+        }
     }
-
     async void Repeat(object sender, RoutedEventArgs e) => await RepeatAsync();
     async Task RepeatAsync()
     {
         if (_speech.LastText is null) return;
         var version = ++_speechVersion;
-        SetBusy(true);
-        try { await _speech.RepeatAsync(s => Dispatcher.Invoke(() => { if (version == _speechVersion) SetStatus(s); })); }
+        SetUiState(UiState.Preparing);
+        try
+        {
+            await _speech.RepeatAsync(s => Dispatcher.Invoke(() =>
+            {
+                if (version == _speechVersion)
+                    SetUiState(s == "Speaking" ? UiState.Speaking : s == "Ready" ? UiState.Idle : UiState.Preparing);
+            }));
+        }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { ShowNotice(ex.Message, false); }
-        finally { if (version == _speechVersion) { SetBusy(false); if (StatusText.Text is "Preparing" or "Speaking") SetStatus("Ready"); } }
+        catch (Exception ex) { if (version == _speechVersion) ShowNotice(ex.Message, !DependenciesReady()); }
+        finally { if (version == _speechVersion && _state is UiState.Preparing or UiState.Speaking) SetUiState(UiState.Idle); }
     }
     async void Preview(object sender, RoutedEventArgs e)
     {
-        var version = ++_speechVersion;
         VoiceFlyout.IsOpen = false;
-        SetBusy(true);
-        try { await _speech.PreviewAsync("Hello, this is the selected FlickVox voice.", s => Dispatcher.Invoke(() => { if (version == _speechVersion) SetStatus(s); })); }
+        var version = ++_speechVersion;
+        SetUiState(UiState.Preparing);
+        try
+        {
+            await _speech.PreviewAsync("Hello, this is the selected FlickVox voice.", s => Dispatcher.Invoke(() =>
+            {
+                if (version == _speechVersion)
+                    SetUiState(s == "Speaking" ? UiState.Speaking : s == "Ready" ? UiState.Idle : UiState.Preparing);
+            }));
+        }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { ShowNotice(ex.Message, false); }
-        finally { if (version == _speechVersion) { SetBusy(false); if (StatusText.Text is "Preparing" or "Speaking") SetStatus("Ready"); } }
+        catch (Exception ex) { if (version == _speechVersion) ShowNotice(ex.Message, !DependenciesReady()); }
+        finally { if (version == _speechVersion && _state is UiState.Preparing or UiState.Speaking) SetUiState(UiState.Idle); }
     }
 
     void InputChanged(object sender, TextChangedEventArgs e)
     {
         if (InputPlaceholder is null) return;
-        UpdateComposerActions();
+        UpdatePlaceholder();
+        if (!_busy && _state != UiState.Error)
+            SetUiState(string.IsNullOrEmpty(Input.Text) ? UiState.Idle : UiState.Typing);
     }
-    void UpdateComposerActions()
-    {
-        var hasText = !string.IsNullOrEmpty(Input.Text);
-        InputPlaceholder.Visibility = hasText ? Visibility.Collapsed : Visibility.Visible;
-        SaveButton.Visibility = hasText ? Visibility.Visible : Visibility.Collapsed;
-        ClearButton.Visibility = hasText ? Visibility.Visible : Visibility.Collapsed;
-    }
-    void ClearInput(object sender, RoutedEventArgs e) { Input.Clear(); Input.Focus(); }
+    void UpdatePlaceholder() => InputPlaceholder.Visibility = string.IsNullOrEmpty(Input.Text) ? Visibility.Visible : Visibility.Collapsed;
     void InputKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
         if (e.Key == Key.Enter && !Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)) { e.Handled = true; _ = SpeakAsync(Input.Text); }
-        else if (e.Key == Key.Escape) StopSpeech();
-        else if (e.Key == Key.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) { e.Handled = true; Input.Clear(); }
-        else if (e.Key == Key.S && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) { e.Handled = true; SavePhrase(sender, e); }
-        else if (e.Key == Key.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) { e.Handled = true; _ = RepeatAsync(); }
+        else if (e.Key is Key.Up or Key.Down && _history.Items.Count > 0 && !Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+        {
+            _historyCursor = Math.Clamp(_historyCursor + (e.Key == Key.Up ? 1 : -1), 0, _history.Items.Count - 1);
+            Input.Text = _history.Items[_historyCursor];
+            Input.CaretIndex = Input.Text.Length;
+            e.Handled = true;
+        }
+    }
+    void WindowPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Alt))
+        {
+            var digit = key is >= Key.D1 and <= Key.D9 ? (int)key - (int)Key.D1 + 1
+                : key is >= Key.NumPad1 and <= Key.NumPad9 ? (int)key - (int)Key.NumPad1 + 1 : 0;
+            if (digit > 0 && digit <= _phrases.Items.Count)
+            {
+                e.Handled = true;
+                PlayPhraseText(_phrases.Items[digit - 1]);
+                return;
+            }
+        }
+        if (key == Key.Escape)
+        {
+            if (VoiceFlyout.IsOpen || OutputFlyout.IsOpen || SpeedFlyout.IsOpen || HistoryPopup.IsOpen)
+                VoiceFlyout.IsOpen = OutputFlyout.IsOpen = SpeedFlyout.IsOpen = HistoryPopup.IsOpen = false;
+            else if (_busy) StopSpeech();
+            else { SavePosition(); Hide(); }
+            e.Handled = true;
+        }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && key == Key.S) { SavePhrase(sender, e); e.Handled = true; }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && key == Key.R) { _ = RepeatAsync(); e.Handled = true; }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && key == Key.L) { Input.Clear(); e.Handled = true; }
     }
 
-    void PlayHistory(object sender, RoutedEventArgs e)
-    { if (sender is Button { Tag: string text }) { Input.Text = text; _ = SpeakAsync(text); } }
-    void PlayPhrase(object sender, RoutedEventArgs e)
-    { if (sender is Button { Tag: SavedPhrase phrase }) { Input.Text = phrase.Text; _ = SpeakAsync(phrase.Text); } }
-
-    void SpeedChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    void RefreshPhrases()
     {
-        if (SpeedValue is null) return;
-        _settings.Current.Speed = Speed.Value;
-        SpeedValue.Text = Speed.Value.ToString("F2") + "×";
-        if (SpeedFlyoutValue is not null) SpeedFlyoutValue.Text = SpeedValue.Text;
-        _settings.Save();
+        PhraseChips.ItemsSource = _phrases.Items.Select((p, i) =>
+            new PhraseChip(p, i < 9 ? (i + 1).ToString() : "", p.Name,
+                i < 9 ? $"{p.Text} · Alt+{i + 1} · Right-click to edit or delete" : $"{p.Text} · Right-click to edit or delete")).ToList();
+    }
+    void PlayPhraseText(SavedPhrase phrase)
+    {
+        Input.Text = phrase.Text;
+        _ = SpeakAsync(phrase.Text);
+    }
+    void PlayPhrase(object sender, RoutedEventArgs e)
+    {
+        if (PhraseFromSender(sender) is { } phrase) PlayPhraseText(phrase);
+    }
+    static SavedPhrase? PhraseFromSender(object sender)
+    {
+        if (sender is FrameworkElement { Tag: SavedPhrase direct }) return direct;
+        if (sender is System.Windows.Controls.MenuItem { Parent: System.Windows.Controls.ContextMenu menu } &&
+            menu.PlacementTarget is FrameworkElement { Tag: SavedPhrase fromMenu }) return fromMenu;
+        return null;
+    }
+    void SavePhrase(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(Input.Text)) return;
+        var text = Input.Text.Trim();
+        var title = text.Length > 32 ? text[..32] + "…" : text;
+        var editor = new PhraseEditorWindow(title, text) { Owner = this };
+        if (editor.ShowDialog() == true) _phrases.Add(editor.PhraseTitle, editor.PhraseBody);
+    }
+    void EditPhrase(object sender, RoutedEventArgs e)
+    {
+        if (PhraseFromSender(sender) is not { } phrase) return;
+        var editor = new PhraseEditorWindow(phrase.Name, phrase.Text) { Owner = this };
+        if (editor.ShowDialog() == true) _phrases.Update(phrase, editor.PhraseTitle, editor.PhraseBody);
+    }
+    void DeletePhrase(object sender, RoutedEventArgs e)
+    {
+        if (PhraseFromSender(sender) is not { } phrase) return;
+        if (MessageBox.Show(this, $"Delete the saved phrase \"{phrase.Name}\"?", "Delete phrase",
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+            _phrases.Delete(phrase);
+    }
+    void ToggleHistory(object sender, RoutedEventArgs e) => HistoryPopup.IsOpen = !HistoryPopup.IsOpen;
+    void PlayHistory(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string text }) return;
+        HistoryPopup.IsOpen = false;
+        Input.Text = text;
+        _ = SpeakAsync(text);
+    }
+
+    void SelectCurrentVoice()
+    {
+        Voice.SelectedItem = (Voice.ItemsSource as IEnumerable<VoiceOption>)?.FirstOrDefault(v => v.Voice.Id == _settings.Current.VoiceId);
     }
     void VoiceChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (Voice.SelectedItem is not VoiceDefinition voice || VoiceValue is null) return;
-        _settings.Current.VoiceId = voice.Id;
-        VoiceValue.Text = voice.ToString();
-        VoiceChip.ToolTip = voice.DisplayName;
+        if (Voice.SelectedItem is not VoiceOption option || VoiceValue is null) return;
+        VoiceValue.Text = option.Label;
+        VoiceChip.ToolTip = option.Voice.DisplayName;
+        if (!_uiReady) return;
+        _settings.Current.VoiceId = option.Voice.Id;
         _settings.Save();
         VoiceFlyout.IsOpen = false;
         if (IsLoaded) CheckReadiness();
@@ -247,13 +507,22 @@ public partial class MainWindow : Window
     void OutputChanged(object sender, SelectionChangedEventArgs e)
     {
         if (OutputValue is null || Output.SelectedIndex < 0) return;
+        OutputValue.Text = Output.SelectedIndex == 0 ? "Default" : Output.SelectedItem?.ToString() ?? "Default";
+        OutputChip.ToolTip = Output.SelectedItem?.ToString();
+        if (!_uiReady) return;
         _settings.Current.OutputDevice = Output.SelectedIndex - 1;
-        OutputValue.Text = Output.SelectedIndex == 0 ? "Default output" : Output.SelectedItem?.ToString() ?? "Default output";
-        OutputChip.ToolTip = OutputValue.Text;
         _settings.Save();
         OutputFlyout.IsOpen = false;
     }
-
+    void SpeedChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (SpeedValue is null) return;
+        SpeedValue.Text = $"{Speed.Value:F2}×";
+        if (SpeedFlyoutValue is not null) SpeedFlyoutValue.Text = SpeedValue.Text;
+        if (!_uiReady) return;
+        _settings.Current.Speed = Speed.Value;
+        _settings.Save();
+    }
     void ToggleVoiceFlyout(object sender, RoutedEventArgs e) => VoiceFlyout.IsOpen = !VoiceFlyout.IsOpen;
     void ToggleOutputFlyout(object sender, RoutedEventArgs e) => OutputFlyout.IsOpen = !OutputFlyout.IsOpen;
     void ToggleSpeedFlyout(object sender, RoutedEventArgs e) => SpeedFlyout.IsOpen = !SpeedFlyout.IsOpen;
@@ -262,71 +531,10 @@ public partial class MainWindow : Window
         if (sender is not Popup opened) return;
         foreach (var popup in new[] { VoiceFlyout, OutputFlyout, SpeedFlyout })
             if (!ReferenceEquals(popup, opened)) popup.IsOpen = false;
+        HistoryPopup.IsOpen = false;
         if (ReferenceEquals(opened, VoiceFlyout)) Voice.Focus();
         else if (ReferenceEquals(opened, OutputFlyout)) Output.Focus();
         else Speed.Focus();
-        VoiceChip.BorderBrush = (Brush)FindResource(VoiceFlyout.IsOpen ? "Brush.AccentText" : "Brush.StrokeControl");
-        OutputChip.BorderBrush = (Brush)FindResource(OutputFlyout.IsOpen ? "Brush.AccentText" : "Brush.StrokeControl");
-        SpeedChip.BorderBrush = (Brush)FindResource(SpeedFlyout.IsOpen ? "Brush.AccentText" : "Brush.StrokeControl");
-    }
-    void WindowPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-    {
-        if (e.Key != Key.Escape) return;
-        if (!VoiceFlyout.IsOpen && !OutputFlyout.IsOpen && !SpeedFlyout.IsOpen) return;
-        VoiceFlyout.IsOpen = OutputFlyout.IsOpen = SpeedFlyout.IsOpen = false;
-        e.Handled = true;
-    }
-
-    void SavePhrase(object sender, RoutedEventArgs e)
-    {
-        if (string.IsNullOrWhiteSpace(Input.Text)) return;
-        var text = Input.Text.Trim();
-        var title = text.Length > 32 ? text[..32] + "…" : text;
-        var editor = new PhraseEditorWindow(title, text) { Owner = this };
-        if (editor.ShowDialog() != true) return;
-        _phrases.Add(editor.PhraseTitle, editor.PhraseBody);
-        SetActiveTab(true);
-        _settings.Current.PhrasePanelExpanded = true;
-        UpdatePhrasePanel();
-    }
-    void EditPhrase(object sender, RoutedEventArgs e)
-    {
-        if (sender is not Button { Tag: SavedPhrase phrase }) return;
-        var editor = new PhraseEditorWindow(phrase.Name, phrase.Text) { Owner = this };
-        if (editor.ShowDialog() == true) _phrases.Update(phrase, editor.PhraseTitle, editor.PhraseBody);
-    }
-    void DeletePhrase(object sender, RoutedEventArgs e)
-    {
-        if (sender is not Button { Tag: SavedPhrase phrase }) return;
-        if (MessageBox.Show(this, $"Delete the saved phrase \"{phrase.Name}\"?", "Delete phrase",
-                MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes) _phrases.Delete(phrase);
-    }
-    void RefreshEmptyStates()
-    {
-        SavedEmpty.Visibility = _phrases.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        RecentEmpty.Visibility = _history.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-    }
-    void ShowSaved(object sender, RoutedEventArgs e) => SetActiveTab(true);
-    void ShowRecent(object sender, RoutedEventArgs e) => SetActiveTab(false);
-    void SetActiveTab(bool saved)
-    {
-        SavedPanel.Visibility = saved ? Visibility.Visible : Visibility.Collapsed;
-        RecentPanel.Visibility = saved ? Visibility.Collapsed : Visibility.Visible;
-        SavedTab.Background = (Brush)FindResource(saved ? "Brush.Accent" : "Brush.SurfaceRaised");
-        RecentTab.Background = (Brush)FindResource(saved ? "Brush.SurfaceRaised" : "Brush.Accent");
-        _settings.Current.ShowSavedPhrases = saved;
-        _settings.Save();
-    }
-    void TogglePhrasePanel(object sender, RoutedEventArgs e)
-    {
-        _settings.Current.PhrasePanelExpanded = !_settings.Current.PhrasePanelExpanded;
-        _settings.Save();
-        UpdatePhrasePanel();
-    }
-    void UpdatePhrasePanel()
-    {
-        PhraseContent.Visibility = _settings.Current.PhrasePanelExpanded ? Visibility.Visible : Visibility.Collapsed;
-        ExpandButton.Content = _settings.Current.PhrasePanelExpanded ? "Collapse ▴" : "Expand ▾";
     }
 
     void OpenVoiceManager(object sender, RoutedEventArgs e)
@@ -334,29 +542,31 @@ public partial class MainWindow : Window
         VoiceFlyout.IsOpen = false;
         new VoiceManagerWindow(_voices) { Owner = this }.ShowDialog();
         _settings.Load();
-        Voice.SelectedItem = Services.VoiceManager.Voices.FirstOrDefault(v => v.Id == _settings.Current.VoiceId);
+        SelectCurrentVoice();
         CheckReadiness();
     }
     void OpenSetup(object sender, RoutedEventArgs e)
     {
         new SetupWindow(_voices, _settings, _hotkey, _history, _speech) { Owner = this }.ShowDialog();
         _settings.Load();
-        Voice.SelectedItem = Services.VoiceManager.Voices.FirstOrDefault(v => v.Id == _settings.Current.VoiceId);
+        SelectCurrentVoice();
         CheckReadiness();
     }
     void OpenSettings(object sender, RoutedEventArgs e)
     {
-        var dialog = new SettingsWindow(_settings, _voices, _hotkey, _history) { Owner = this };
-        dialog.ShowDialog();
+        new SettingsWindow(_settings, _voices, _hotkey, _history) { Owner = this }.ShowDialog();
         ApplyComposerTypography();
-        Voice.SelectedItem = Services.VoiceManager.Voices.FirstOrDefault(v => v.Id == _settings.Current.VoiceId);
+        SelectCurrentVoice();
         Speed.Value = _settings.Current.Speed;
         Output.SelectedIndex = Math.Clamp(_settings.Current.OutputDevice + 1, 0, Output.Items.Count - 1);
+        Topmost = _settings.Current.AlwaysOnTop;
+        UpdatePin();
+        SetMode(_expanded, persist: false);
         CheckReadiness();
     }
     void ApplyComposerTypography()
     {
-        Input.FontSize = _settings.Current.ComposerFontSize;
+        Input.FontSize = Math.Clamp(_settings.Current.ComposerFontSize, 14, 40);
         InputPlaceholder.FontSize = Input.FontSize;
         var font = _settings.Current.ComposerFont switch
         {
@@ -367,13 +577,17 @@ public partial class MainWindow : Window
         Input.FontFamily = font;
         InputPlaceholder.FontFamily = font;
     }
-    void OpenOverlay(object sender, RoutedEventArgs e) => ShowOverlay();
-    void ShowOverlay() { _overlay ??= new OverlayWindow(this, _speech, _settings, _history, _phrases); _overlay.ShowAndFocus(); }
     void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        SavePosition();
         if (!_exitRequested) { e.Cancel = true; Hide(); }
-        _settings.Current.OutputDevice = Output.SelectedIndex - 1;
-        _settings.Save();
     }
-    protected override void OnClosed(EventArgs e) { _speech.Stop(); _tray?.Dispose(); _hotkey.Dispose(); _audio.Dispose(); base.OnClosed(e); }
+    protected override void OnClosed(EventArgs e)
+    {
+        _speech.Stop();
+        _tray?.Dispose();
+        _hotkey.Dispose();
+        _audio.Dispose();
+        base.OnClosed(e);
+    }
 }

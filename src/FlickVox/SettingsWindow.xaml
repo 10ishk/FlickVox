@@ -15,7 +15,7 @@
       <Grid.ColumnDefinitions><ColumnDefinition Width="148"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
       <ListBox x:Name="Sections" SelectionChanged="SectionChanged" AutomationProperties.Name="Settings sections">
         <ListBoxItem Content="General"/><ListBoxItem Content="Voice &amp; audio"/>
-        <ListBoxItem Content="Overlay"/><ListBoxItem Content="Appearance"/>
+        <ListBoxItem Content="Compact window"/><ListBoxItem Content="Appearance"/>
         <ListBoxItem Content="Accessibility"/><ListBoxItem Content="About"/>
       </ListBox>
       <Border Grid.Column="2" Style="{StaticResource Card}" Padding="16">
@@ -23,7 +23,7 @@
           <Grid>
             <StackPanel x:Name="GeneralPanel">
               <TextBlock Text="General" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
-              <CheckBox x:Name="HideAfter" Style="{StaticResource ToggleSwitch}" Content="Hide overlay after successful playback"
+              <CheckBox x:Name="HideAfter" Style="{StaticResource ToggleSwitch}" Content="Hide quick pill after successful playback"
                         Checked="HideAfterChanged" Unchecked="HideAfterChanged"/>
               <TextBlock Text="On errors or cancellation, your draft stays in the overlay. When off, the overlay stays open."
                          Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,5,0,0"/>
@@ -52,15 +52,15 @@
                          Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,14,0,0"/>
             </StackPanel>
             <StackPanel x:Name="OverlayPanel" Visibility="Collapsed">
-              <TextBlock Text="Overlay" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
-              <CheckBox x:Name="AlwaysOnTop" Style="{StaticResource ToggleSwitch}" Content="Keep overlay above other windows"
+              <TextBlock Text="Compact window" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
+              <CheckBox x:Name="AlwaysOnTop" Style="{StaticResource ToggleSwitch}" Content="Keep FlickVox above other windows"
                         Checked="AlwaysOnTopChanged" Unchecked="AlwaysOnTopChanged" Margin="0,0,0,16"/>
-              <TextBlock Text="Overlay width" Style="{StaticResource FieldLabel}"/>
-              <Slider x:Name="OverlayWidth" Minimum="420" Maximum="800" TickFrequency="20"
+              <TextBlock Text="Quick pill width" Style="{StaticResource FieldLabel}"/>
+              <Slider x:Name="OverlayWidth" Minimum="320" Maximum="800" TickFrequency="20"
                       ValueChanged="OverlayWidthChanged" Margin="0,8,0,4"/>
               <TextBlock x:Name="OverlayWidthValue" HorizontalAlignment="Right" Foreground="{DynamicResource Brush.AccentText}"/>
-              <Button Content="Reset overlay position" Click="ResetOverlayPosition" HorizontalAlignment="Left" Margin="0,16,0,0"/>
-              <TextBlock Text="Global overlay shortcut" Style="{StaticResource FieldLabel}" Margin="0,16,0,0"/>
+              <Button Content="Reset window position" Click="ResetOverlayPosition" HorizontalAlignment="Left" Margin="0,16,0,0"/>
+              <TextBlock Text="Global quick-pill shortcut" Style="{StaticResource FieldLabel}" Margin="0,16,0,0"/>
               <ComboBox x:Name="Hotkey" IsEditable="True" SelectionChanged="HotkeyChanged" LostFocus="HotkeyLostFocus" Margin="0,6,0,0"
                         AutomationProperties.Name="Global overlay shortcut">
                 <ComboBoxItem Content="Ctrl+Alt+T"/><ComboBoxItem Content="Ctrl+Alt+V"/><ComboBoxItem Content="Ctrl+Shift+T"/>

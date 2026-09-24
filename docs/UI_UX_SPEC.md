@@ -4,7 +4,7 @@
 **Based on:** the `10ishk/FlickVox` README (WPF · .NET 10 · Piper · NAudio) and your two screenshots (wide and narrow window).
 **Goal:** turn FlickVox from "a working tool with default-ish styling" into a product that feels fast, calm, trustworthy and unmistakably designed.
 
-**Compact-first amendment (24 Sep 2026):** Sections 9–10 and the compact concept supersede earlier screenshot-audit observations, wide-layout examples and speculative waveform/phrase-strip roadmap items. Retain Signal tokens and accessibility guidance; do not treat older concept sketches as implemented behavior.
+**Unified-window amendment (25 Sep 2026):** Sections 9–10 and the two HTML design references supersede earlier separate-window and wide-layout examples. Retain accessibility guidance; do not treat older concept sketches or speculative waveform items as implemented behavior.
 
 ---
 
@@ -13,17 +13,17 @@
 | # | Decision | Choice |
 |---|---|---|
 | 1 | Design direction | **Calm, dark-first "signal" UI**; light theme + follow-system supported |
-| 2 | Hero surface | The **composer** (where you type) in the main window and the **overlay** (the thing users see 100× a day) |
-| 3 | Accent | **Indigo `#4F46E5`** (fills) / **`#A5ADFF`** (text, focus ring on dark) |
-| 4 | Secondary "live" colour | **Mint `#3DDBB5`**, used *only* for audio-is-live / ready / success |
-| 5 | Neutrals | Cool ink scale: `#0F1218 → #161A22 → #1D222C` (dark), `#F3F5F9 → #FFFFFF` (light) |
+| 2 | Hero surface | One shared composer in the quick pill and expanded workspace |
+| 3 | Primary action | **White `#F4F5F7`** with dark `#0E1015` icon/text |
+| 4 | Live colour | **Green `#3DDC97`**, used only during actual playback |
+| 5 | Neutrals | Base `#0E1015` → Raised `#14171E` → Hover `#1A1D26` |
 | 6 | UI font | **Inter** (bundled static weights) → fallback Segoe UI Variable / Segoe UI |
 | 7 | Wordmark font | **Sora SemiBold** (wordmark only) |
 | 8 | Accessibility font option | **Atkinson Hyperlegible** as a user-selectable composer font |
 | 9 | Icons | **Fluent System Icons** (MIT), 20 px, replace all text glyphs (`✕`, `↗`) |
-| 10 | Main layout | **Compact composer-first**, action row, three chips, collapsible Saved/Recent below |
-| 11 | Settings | Move Voice / Output / Speed **out of the big always-visible card** into chips + flyouts |
-| 12 | Overlay | 520 × 72 quick bar, truthful status, optional expanded drawer in the same window |
+| 10 | Expanded layout | Slim title bar, composer, saved chips, quiet configuration footer and Recent popover |
+| 11 | Settings | Keep Voice / Output / Speed in functional footer popovers |
+| 12 | Unified window | One window: 360 × 48 quick pill or compact expanded workspace |
 
 If you only have one evening: do **Section 2 (fix the audit list)** and **Phase 0** in Section 19. That alone removes everything that looks "unfinished".
 
@@ -123,25 +123,19 @@ A lightweight, **fully offline** Windows text-to-speech app for everyday communi
 
 | Token | Hex | Use | WPF key |
 |---|---|---|---|
-| Canvas | `#0F1218` | Window background (solid fallback under Mica) | `Brush.Canvas` |
-| Surface | `#161A22` | Cards, composer | `Brush.Surface` |
-| SurfaceRaised | `#1D222C` | Inputs, chips, flyouts | `Brush.SurfaceRaised` |
-| SurfaceHover | `#252B37` | Hover on raised items | `Brush.SurfaceHover` |
-| StrokeSubtle | `#262D39` | Card borders, dividers (decorative) | `Brush.StrokeSubtle` |
-| StrokeControl | `#65718A` | Borders of interactive controls (≥ 3:1) | `Brush.StrokeControl` |
-| Text | `#EEF1F6` | Primary text | `Brush.Text` |
-| TextSecondary | `#A9B2C1` | Labels, hints | `Brush.TextSecondary` |
-| TextTertiary | `#8592A5` | Placeholders, disabled-ish captions | `Brush.TextTertiary` |
-| Accent | `#4F46E5` | Primary button fill, selected states | `Brush.Accent` |
-| AccentHover | `#5B54F0` | Primary hover | `Brush.AccentHover` |
-| AccentPressed | `#4338CA` | Primary pressed | `Brush.AccentPressed` |
-| AccentText | `#A5ADFF` | Links, selected text, **focus ring** | `Brush.AccentText` |
-| AccentSubtle | `#294F46E5` (16 % alpha) | Selected row / chip background | `Brush.AccentSubtle` |
-| Signal (mint) | `#3DDBB5` | Ready dot, speaking waveform, success | `Brush.Signal` |
-| SignalSubtle | `#263DDBB5` | Speaking glow / success background | `Brush.SignalSubtle` |
-| Danger | `#FF7A7A` | Errors, destructive | `Brush.Danger` |
-| Warning | `#F5B94C` | Hotkey conflict, model missing | `Brush.Warning` |
-| OverlayBg | `#F012161C` (94 % alpha) | Overlay window fill | `Brush.OverlayBg` |
+| Canvas | `#0E1015` | Unified-window background | `Brush.Canvas` |
+| Surface / SurfaceRaised | `#14171E` | Input, popovers, supporting cards | `Brush.SurfaceRaised` |
+| SurfaceHover | `#1A1D26` | Chips and row hover | `Brush.SurfaceHover` |
+| StrokeSubtle / StrokeControl | `#262A34` | Hairlines and borders | `Brush.StrokeControl` |
+| Text | `#E8EAF0` | Primary text | `Brush.Text` |
+| TextSecondary | `#9096A3` | Footer and icons | `Brush.TextSecondary` |
+| TextTertiary | `#5B6070` | Placeholder and muted text | `Brush.TextTertiary` |
+| PrimaryAction | `#F4F5F7` | Send button while idle | `Brush.PrimaryAction` |
+| OnPrimary | `#0E1015` | Send icon | `Brush.OnPrimary` |
+| Signal | `#3DDC97` | Actual playback only | `Brush.Signal` |
+| SignalBorder | `#1F5A43` | Speaking outline | `Brush.SignalBorder` |
+| Danger | `#F0616D` | Errors, destructive | `Brush.Danger` |
+| Warning | `#F2B441` | Hotkey conflict, model missing | `Brush.Warning` |
 
 ### 4.3 Light theme
 
@@ -276,23 +270,20 @@ Prefer 1 px strokes over thick outlines; use the shadow only on floating things.
 
 ```
 FlickVox
-├─ Main window ("Speak")           ← default landing, the only "page"
-│   ├─ Header: brand · status · hotkey · Overlay · Settings
-│   ├─ Composer + action row
-│   ├─ Voice bar: Voice · Output · Speed (flyouts)
-│   └─ Collapsible [Saved | Recent] below composer/actions
-├─ Overlay (global hotkey)          ← the most-used surface
+├─ Unified primary window
+│   ├─ Quick pill (global hotkey): shared composer + Send/Stop
+│   └─ Expanded workspace: title controls · saved chips · quiet configuration footer · Recent popover
 ├─ Voice Manager (dialog)
-├─ Settings (dialog/page): General · Voice & audio · Overlay · Appearance · Accessibility · About
+├─ Settings (dialog): General · Voice & audio · Compact window · Appearance · Accessibility · About
 └─ Tray menu
 ```
 
-No sidebar and no tabs at window level: the app does one thing, so it should feel like one screen. The gear icon in the header is the only route to Settings.
+No separate overlay process or competing primary window exists. Both modes share one text box and service graph.
 
 | Screen | Purpose | Entry | Exit |
 |---|---|---|---|
-| Main window | Compose, speak, manage phrases | Launch / tray click | Close (→ tray, configurable) |
-| Overlay | Speak without leaving what you're doing | `Ctrl+Alt+T`, tray, header button | Esc / after speaking |
+| Unified window (expanded) | Compose, speak, manage phrases | Launch / tray click / expand pill | Collapse / close to tray |
+| Same window (quick pill) | Speak without leaving what you're doing | `Ctrl+Alt+T` / tray | Expand / Esc / after successful playback |
 | Voice Manager | Install, preview, remove voices | Voice flyout → "Manage voices…" | Close |
 | Settings | Rare configuration | Gear, `Ctrl+,` | Close / Esc |
 
@@ -322,29 +313,33 @@ Interaction rules:
 
 ---
 
-## 9. Compact main window
+## 9. Unified compact window
 
-The compact-first layout supersedes the former wide two-column dashboard. The default outer size is approximately 520 × 500 DIPs; minimum dimensions are practical rather than fixed to the concept artwork. The content scrolls as text scaling or window size demands. There is no permanent right rail or bottom footer.
+FlickVox has one primary WPF window with two modes, not a separate main window and overlay. The same text box, draft, speech state, shared history, phrase service, hotkey and tray commands serve both modes. Settings and Voice Manager remain separate supporting dialogs.
 
-- Header: waveform brand, FlickVox name, short truthful status, Overlay action and Settings action. The shortcut belongs in the tooltip and Settings, not permanent keycaps.
-- Composer: the primary 158-DIP surface, multiline input, conditional placeholder and Save/Clear actions. Enter speaks, Shift+Enter inserts a newline. A long message scrolls inside the composer.
-- Voice, Output and Speed: three working chips with flyouts. The row wraps naturally; long output names trim with full-name tooltips. Configuration is distinct from Speak/Stop and Repeat.
-- Actions: Repeat is one click away and disabled until a valid last message exists. Speak becomes Stop while active.
-- Saved/Recent: a single collapsible section beneath the actions. Expanded state and selected tab persist. Saved rows expose Play, Edit/Rename and confirmed Delete; Recent rows expose Play. Empty states are conditional.
-- Errors: a short status in the header; detailed actionable guidance in a separate notification.
-- Readiness: “Ready” requires Piper and the selected voice. Missing dependencies open a lightweight setup path.
+### Collapsed quick pill
 
-The supplied [compact concept](design/flickvox_compact_concept.svg) is a visual reference, not a literal WPF implementation. Signal resources, iconography, accessibility and component guidance elsewhere in this document still apply.
+Target approximately 360 × 48 DIPs for new settings, with accessible user-adjustable width. A dedicated drag grip, shared input, small contextual status, visible Send/Stop button and expand action fit in one pill. Ctrl+Alt+T opens this mode and focuses the input. Enter speaks; Shift+Enter inserts a newline; Escape stops speech or dismisses. The quick pill hides after **successful playback** only when that preference is enabled. Errors retain the draft. No audio-reactive visualization is implied.
+
+### Expanded workspace
+
+Target roughly 380–440 DIPs wide and a short content-driven-feeling footprint. The slim title bar has Pin, Settings, Collapse and Close-to-tray actions. The composer remains the same input as the quick pill. Saved phrases appear as compact buttons with the first nine locally bound to Alt+1…Alt+9; a dashed Save Current chip opens the phrase editor. Right-click phrase actions provide Edit/Rename and confirmed Delete. Repeat remains available without rerunning Piper when its cache is valid. Voice, Output and Speed live in a quiet footer with functional popovers; Recent opens an actionable history popover.
+
+The expanded/collapsed state and position persist. A shortcut invocation deliberately opens the quick pill even if the saved state was expanded. Old overlay coordinates and non-default size settings migrate without replacing personal settings.
+
+### Speech state and palette
+
+Idle and Typing use neutral feedback; Preparing remains neutral while Piper generates; the green signal appears **only during playback**; Error uses the error token. Send is white with dark icon while idle and becomes Stop during active speech. No fabricated waveform or activity animation is used.
+
+The dark palette is authoritative: Base `#0E1015`, Raised `#14171E`, Hover `#1A1D26`, Border `#262A34`; text `#E8EAF0`, `#9096A3`, `#5B6070`; primary action `#F4F5F7` / on-primary `#0E1015`; speaking `#3DDC97` / border `#1F5A43`; Error `#F0616D`; Warning `#F2B441`. These are semantic resources shared by supporting windows. The explicit Light and High Contrast preferences retain their corresponding accessible palettes.
+
+[Unified layout reference](design/flickvox_compact_layout_proposal.html) and [palette reference](design/flickvox_color_palette.html) are visual source material, not HTML used in the WPF application. The earlier [compact-first concept](design/flickvox_compact_concept.svg) is superseded for the primary-window architecture.
 
 ---
 
-## 10. Quick and expanded overlay
+## 10. Interaction and accessibility
 
-The quick overlay is one floating window, approximately 520 × 72 DIPs for new settings. Existing personalized size and position are preserved. Its dedicated drag grip does not interfere with input selection. The bar shows a text box and truthful Ready, Typing, Preparing, Speaking or Error status; no simulated waveform.
-
-Ctrl+Alt+T remains the default global shortcut. It opens the quick bar and focuses input. Enter speaks; Shift+Enter inserts a newline; Escape stops/dismisses; Up/Down traverse shared recent history. Hide-after-speaking occurs **only after successful playback**, and errors retain the draft. Saved positions are clamped to visible monitor work areas. Exclusive-fullscreen games and focus restoration may be constrained by Windows; no injection is used.
-
-An expand affordance opens a drawer in the same overlay instance. It includes voice and output selectors, Speak/Stop, and shared Saved/Recent lists with visible Play actions. Collapse returns to the minimal bar. Shortcut invocation prefers the quick bar even if an expanded preference was previously stored. The expanded height is not written over the user's quick-bar height.
+The global shortcut registers once and opens the existing primary window in quick mode; no second primary window or additional global hooks are created. Alt+1…Alt+9 shortcuts are local to FlickVox focus and announce their mapping in the Saved label and phrase tooltips. The same phrase and recent collections back both window modes. Popovers and dialogs remain keyboard accessible. Positioning clamps to the current visible working area and respects DPI scaling; exclusive-fullscreen games may still prevent an overlay from appearing.
 
 ---
 ## 11. Component specifications
@@ -533,7 +528,7 @@ src/FlickVox/
 ├─ Styles/     Buttons.xaml  Inputs.xaml  Chips.xaml  Lists.xaml  Flyouts.xaml  Toggle.xaml  Slider.xaml
 ├─ Assets/     Fonts/ (Inter-*.ttf, Sora-SemiBold.ttf, AtkinsonHyperlegible-*.ttf)  Icons/  FlickVox.ico
 ├─ Controls/   Keycap  StatusPill  Waveform  Chip  Toast
-└─ Views/      MainWindow  OverlayWindow  VoiceManagerDialog  SettingsWindow
+└─ Views/      MainWindow (quick + expanded)  VoiceManagerDialog  SettingsWindow
 ```
 `App.xaml` merges **`Themes/Dark.xaml` at index 0** (swappable), then Metrics, Typography, Icons, and the Styles.
 Use **`DynamicResource`** for every brush so the theme can switch at runtime.
@@ -689,25 +684,20 @@ public static string FriendlyName(string id)
 </Style>
 ```
 
-### 18.6 Overlay window skeleton (compact-first)
+### 18.6 Unified window skeleton
 ```xml
-<Window x:Class="FlickVox.OverlayWindow"
+<Window x:Class="FlickVox.MainWindow"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
-        ShowInTaskbar="False" Topmost="True" ResizeMode="NoResize"
-        Width="520" Height="72">
-  <Border Margin="8" CornerRadius="18"
-          Background="{DynamicResource Brush.OverlayBg}"
-          BorderBrush="#1AFFFFFF" BorderThickness="1">
-    <Border.Effect>
-      <DropShadowEffect BlurRadius="32" ShadowDepth="8" Direction="270" Opacity="0.5"/>
-    </Border.Effect>
-    <!-- grip · TextBox (transparent) · status · expand/collapse -->
+        ResizeMode="NoResize" Width="410" Height="300">
+  <Border CornerRadius="14" Background="{DynamicResource Brush.Canvas}"
+          BorderBrush="{DynamicResource Brush.StrokeControl}" BorderThickness="1">
+    <!-- one composer; quick mode hides expanded rows and uses 360 × 48 -->
   </Border>
 </Window>
 ```
-- Add `WS_EX_TOOLWINDOW` to the extended style so it doesn't appear in Alt-Tab.
-- Account for the 8 px border margin when positioning. Preserve existing user dimensions.
-- An expanded drawer is part of the same window and scrolls when working-area height is limited. Do not draw an unverified waveform.
+- Preserve the shared input when changing dimensions.
+- Clamp restored coordinates to a visible monitor working area. Preserve migrated personal dimensions.
+- Do not draw an unverified waveform.
 
 ### 18.7 Rendering, DPI, accessibility plumbing
 - **Per-monitor DPI v2** in `app.manifest` so text stays sharp when moving between monitors or at 125/150 %:
@@ -743,20 +733,17 @@ public static string FriendlyName(string id)
 - [ ] Styles: Button (primary/secondary/ghost/icon), TextBox, CheckBox → Toggle, Slider, ScrollBar, ToolTip, Keycap, StatusPill
 - **Done when:** no control shows a default Windows look; changing one token recolours the app.
 
-### Phase 2 — Main window layout (1 weekend)
-- [ ] Composer-first layout with inline footer (hints · Save · Clear)
-- [ ] Speak ↔ Stop morph, Repeat secondary
-- [ ] Voice bar chips + flyouts (Voice, Output + volume, Speed + presets)
-- [ ] Collapsible Saved/Recent beneath actions with visible Play/Edit/Delete and conditional empty states
-- [ ] Compact 520 × 500 default, practical minimum, wrapping chips and vertical scrolling
-- **Done when:** the window is usable at default/minimum size and at 100/125/150/200 % scaling.
+### Phase 2 — Unified compact window
+- [ ] One shared composer and Send ↔ Stop action across quick and expanded modes
+- [ ] Saved phrase chips with local Alt+1…9, quiet Voice/Output/Speed footer, Recent popover
+- [ ] Position/state migration and 360 × 48 quick-pill sizing
+- **Done when:** expansion does not lose the draft and both modes remain usable at common text scales.
 
-### Phase 3 — Overlay polish (1 weekend)
-- [ ] New pill design, drag grip, per-monitor position memory
-- [ ] States: ready · typing · preparing · speaking · error
-- [ ] Shared saved/recent access in an expanded drawer; ↑/↓ recall; hide only after successful playback
-- [ ] Entrance/exit animation, hidden-but-alive window
-- **Done when:** hotkey → typing feels instant, and you'd be happy to record a GIF of it.
+### Phase 3 — Quick-pill interaction
+- [ ] Dedicated drag grip, visible Send/Stop, monitor-aware position and immediate focus
+- [ ] Idle · Typing · Preparing · Speaking · Error; green only during playback
+- [ ] Enter/Shift+Enter/Esc and hide only after successful playback
+- **Done when:** the hotkey opens the existing window in quick mode without a second instance.
 
 ### Phase 4 — Supporting surfaces (1–2 weekends)
 - [ ] Voice Manager redesign (§12)

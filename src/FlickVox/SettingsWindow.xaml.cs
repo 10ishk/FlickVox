@@ -30,7 +30,7 @@ public partial class SettingsWindow : Window
         PersistHistory.IsChecked = settings.Current.PersistHistory;
         Hotkey.Text = hotkey.Current;
         AlwaysOnTop.IsChecked = settings.Current.AlwaysOnTop;
-        OverlayWidth.Value = Math.Clamp(settings.Current.OverlayWidth, OverlayWidth.Minimum, OverlayWidth.Maximum);
+        OverlayWidth.Value = Math.Clamp(settings.Current.UnifiedQuickWidth, OverlayWidth.Minimum, OverlayWidth.Maximum);
         ComposerSize.Value = settings.Current.ComposerFontSize;
         Theme.SelectedIndex = settings.Current.Theme switch { "Light" => 1, "System" => 2, _ => 0 };
         ComposerFont.SelectedIndex = settings.Current.ComposerFont switch { "Atkinson Hyperlegible" => 1, "System" => 2, _ => 0 };
@@ -111,7 +111,7 @@ public partial class SettingsWindow : Window
     {
         if (OverlayWidthValue is null) return;
         OverlayWidthValue.Text = $"{OverlayWidth.Value:F0} px";
-        Save(s => s.OverlayWidth = OverlayWidth.Value);
+        Save(s => s.UnifiedQuickWidth = OverlayWidth.Value);
     }
     void ComposerSizeChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
@@ -133,7 +133,7 @@ public partial class SettingsWindow : Window
     }
     void ResetOverlayPosition(object sender, RoutedEventArgs e)
     {
-        Save(s => { s.OverlayLeft = double.NaN; s.OverlayTop = double.NaN; });
+        Save(s => { s.UnifiedLeft = double.NaN; s.UnifiedTop = double.NaN; });
     }
     void WindowKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {

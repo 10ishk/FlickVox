@@ -74,7 +74,7 @@
     <Setter Property="Height" Value="44"/><Setter Property="MinWidth" Value="140"/>
     <Setter Property="Background" Value="{DynamicResource Brush.Accent}"/>
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/>
-    <Setter Property="Foreground" Value="White"/>
+    <Setter Property="Foreground" Value="{DynamicResource Brush.OnPrimary}"/>
     <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
       <Grid>
         <Border x:Name="Focus" Margin="-3" CornerRadius="13" BorderThickness="2" BorderBrush="Transparent"/>
@@ -211,6 +211,7 @@
           <Setter TargetName="Track" Property="Background" Value="{DynamicResource Brush.Accent}"/>
           <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
           <Setter TargetName="Thumb" Property="Margin" Value="0,0,3,0"/>
+          <Setter TargetName="Thumb" Property="Fill" Value="{DynamicResource Brush.OnPrimary}"/>
         </Trigger>
         <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource Brush.AccentText}"/></Trigger>
       </ControlTemplate.Triggers>

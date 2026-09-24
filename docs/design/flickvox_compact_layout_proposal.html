@@ -1,0 +1,72 @@
+<h2 class="sr-only">Proposed compact FlickVox layout showing a pill idle state, a pill speaking state, and a small expanded window with saved phrase hotkeys.</h2>
+<style>
+.app{background:#0E1015;border:1px solid #262A34;border-radius:14px;color:#E8EAF0;font-family:var(--font-sans)}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:8px;background:#171A22;border:1px solid #262A34;font-size:13px;color:#E8EAF0}
+.chip kbd{font-family:var(--font-mono);font-size:11px;color:#8A8F9C}
+.ib{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;color:#8A8F9C;font-size:16px;border-radius:6px}
+.lab{font-size:12px;color:var(--text-secondary);margin:0 0 6px}
+.go{width:32px;height:32px;border-radius:50%;background:#F4F5F7;color:#0E1015;display:inline-flex;align-items:center;justify-content:center;font-size:17px;flex:none}
+.bar{width:3px;border-radius:2px;background:#3DDC97;display:inline-block}
+.ft{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#8A8F9C;padding:0 8px;height:26px;border-radius:6px}
+</style>
+<div style="background:var(--surface-1);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:20px">
+
+<div>
+<p class="lab">Pill, idle (summoned with Ctrl+Alt+T)</p>
+<div class="app" style="width:360px;height:48px;display:flex;align-items:center;gap:8px;padding:0 8px 0 10px;border-radius:24px">
+<i class="ti ti-grip-vertical" style="color:#5B6070;font-size:16px" aria-hidden="true"></i>
+<span style="flex:1;font-size:14px;color:#5B6070">Type, press Enter</span>
+<span class="go"><i class="ti ti-volume-2" aria-hidden="true"></i></span>
+</div>
+</div>
+
+<div>
+<p class="lab">Pill, speaking (send becomes stop, green appears only here)</p>
+<div class="app" style="width:360px;height:48px;display:flex;align-items:center;gap:8px;padding:0 8px 0 10px;border-radius:24px;border-color:#1F5A43">
+<i class="ti ti-grip-vertical" style="color:#5B6070;font-size:16px" aria-hidden="true"></i>
+<span style="flex:1;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">On my way, cover the left</span>
+<span style="display:inline-flex;align-items:center;gap:2px;height:20px">
+<span class="bar" style="height:6px"></span><span class="bar" style="height:14px"></span><span class="bar" style="height:9px"></span><span class="bar" style="height:18px"></span><span class="bar" style="height:8px"></span>
+</span>
+<span class="go" style="background:transparent;border:1.5px solid #3DDC97;color:#3DDC97"><i class="ti ti-player-stop" aria-hidden="true"></i></span>
+</div>
+</div>
+
+<div>
+<p class="lab">Compact window, 380 wide, about 230 tall (replaces main window and overlay)</p>
+<div class="app" style="width:380px;overflow:hidden">
+<div style="height:34px;display:flex;align-items:center;gap:8px;padding:0 6px 0 12px;border-bottom:1px solid #1B1E26">
+<i class="ti ti-wave-square" style="color:#3DDC97;font-size:16px" aria-hidden="true"></i>
+<span style="flex:1;font-size:13px;font-weight:500">FlickVox</span>
+<span class="ib" aria-label="Keep on top"><i class="ti ti-pin" aria-hidden="true"></i></span>
+<span class="ib" aria-label="Settings"><i class="ti ti-settings" aria-hidden="true"></i></span>
+<span class="ib" aria-label="Close"><i class="ti ti-x" aria-hidden="true"></i></span>
+</div>
+<div style="padding:12px;display:flex;flex-direction:column;gap:12px">
+<div style="background:#12151C;border:1px solid #262A34;border-radius:10px;padding:10px 10px 10px 12px;min-height:64px;display:flex;align-items:flex-end;gap:8px">
+<span style="flex:1;font-size:14px;color:#5B6070;align-self:flex-start">Type, press Enter to speak</span>
+<span class="go"><i class="ti ti-volume-2" aria-hidden="true"></i></span>
+</div>
+<div>
+<p style="font-size:11px;color:#5B6070;margin:0 0 6px">Saved  ·  Alt+1 to Alt+9</p>
+<div style="display:flex;flex-wrap:wrap;gap:6px">
+<span class="chip"><kbd>1</kbd>On my way</span>
+<span class="chip"><kbd>2</kbd>Need backup</span>
+<span class="chip"><kbd>3</kbd>Good game</span>
+<span class="chip"><kbd>4</kbd>Thanks</span>
+<span class="chip" style="border-style:dashed;color:#8A8F9C"><i class="ti ti-plus" style="font-size:13px" aria-hidden="true"></i>Save current</span>
+</div>
+</div>
+</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-top:1px solid #1B1E26">
+<div style="display:flex;gap:2px">
+<span class="ft"><i class="ti ti-microphone-2" aria-hidden="true"></i>Ryan · Fast</span>
+<span class="ft"><i class="ti ti-headphones" aria-hidden="true"></i>Default</span>
+<span class="ft"><i class="ti ti-gauge" aria-hidden="true"></i>1.0×</span>
+</div>
+<span class="ft"><i class="ti ti-history" aria-hidden="true"></i>Recent</span>
+</div>
+</div>
+</div>
+
+</div>

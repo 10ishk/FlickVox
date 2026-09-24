@@ -13,7 +13,10 @@
   <SolidColorBrush x:Key="Brush.AccentPressed" Color="{x:Static SystemColors.HighlightColor}"/>
   <SolidColorBrush x:Key="Brush.AccentText" Color="{x:Static SystemColors.HighlightColor}"/>
   <SolidColorBrush x:Key="Brush.AccentSubtle" Color="{x:Static SystemColors.HighlightColor}"/>
+  <SolidColorBrush x:Key="Brush.PrimaryAction" Color="{x:Static SystemColors.HighlightColor}"/>
+  <SolidColorBrush x:Key="Brush.OnPrimary" Color="{x:Static SystemColors.HighlightTextColor}"/>
   <SolidColorBrush x:Key="Brush.Signal" Color="{x:Static SystemColors.WindowTextColor}"/>
+  <SolidColorBrush x:Key="Brush.SignalBorder" Color="{x:Static SystemColors.WindowTextColor}"/>
   <SolidColorBrush x:Key="Brush.SignalSubtle" Color="{x:Static SystemColors.WindowColor}"/>
   <SolidColorBrush x:Key="Brush.Danger" Color="{x:Static SystemColors.WindowTextColor}"/>
   <SolidColorBrush x:Key="Brush.Warning" Color="{x:Static SystemColors.WindowTextColor}"/>
