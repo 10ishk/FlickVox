@@ -342,11 +342,17 @@ public partial class MainWindow : Window
     {
         if (string.IsNullOrWhiteSpace(text)) return;
         var version = ++_speechVersion;
+        var hideQuickPill = !_expanded && _settings.Current.HideOverlayAfterSpeaking;
         Notice.Visibility = Visibility.Collapsed;
         if (_expanded) Height = ExpandedContentHeight();
         _history.Add(text);
         _historyCursor = -1;
         SetUiState(UiState.Preparing);
+        if (hideQuickPill)
+        {
+            Hide();
+            SavePosition();
+        }
         try
         {
             await _speech.SpeakAsync(text, s => Dispatcher.Invoke(() =>
@@ -354,12 +360,7 @@ public partial class MainWindow : Window
                 if (version != _speechVersion) return;
                 SetUiState(s switch { "Speaking" => UiState.Speaking, "Ready" => string.IsNullOrEmpty(Input.Text) ? UiState.Idle : UiState.Typing, _ => UiState.Preparing });
             }));
-            if (version == _speechVersion && !_expanded && _settings.Current.HideOverlayAfterSpeaking)
-            {
-                Input.Clear();
-                SavePosition();
-                Hide();
-            }
+            if (version == _speechVersion && hideQuickPill && !IsVisible) Input.Clear();
         }
         catch (OperationCanceledException) { if (version == _speechVersion) SetUiState(UiState.Typing); }
         catch (Exception ex) { if (version == _speechVersion) ShowNotice(ex.Message, !DependenciesReady()); }

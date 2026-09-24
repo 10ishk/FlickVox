@@ -23,9 +23,9 @@
           <Grid>
             <StackPanel x:Name="GeneralPanel">
               <TextBlock Text="General" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
-              <CheckBox x:Name="HideAfter" Style="{StaticResource ToggleSwitch}" Content="Hide quick pill after successful playback"
+              <CheckBox x:Name="HideAfter" Style="{StaticResource ToggleSwitch}" Content="Hide quick pill when speech starts"
                         Checked="HideAfterChanged" Unchecked="HideAfterChanged"/>
-              <TextBlock Text="On errors or cancellation, your draft stays in the quick pill. When off, the quick pill stays open."
+              <TextBlock Text="Speech continues in the background. Reopen the pill to stop it. On errors or cancellation, your draft is preserved. When off, the pill stays open."
                          Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,5,0,0"/>
               <CheckBox x:Name="PersistHistory" Style="{StaticResource ToggleSwitch}" Content="Keep recent messages between sessions"
                         Checked="PersistHistoryChanged" Unchecked="PersistHistoryChanged" Margin="0,18,0,0"/>
