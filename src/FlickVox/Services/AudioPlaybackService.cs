@@ -1,15 +1,66 @@
 using NAudio.Wave;
+
 namespace FlickVox.Services;
+
 public sealed class AudioPlaybackService : IDisposable
 {
-    private WaveOutEvent? _output; private AudioFileReader? _reader;
-    public bool IsPlaying => _output?.PlaybackState == PlaybackState.Playing;
-    public Task PlayAsync(string file, float volume, int device, CancellationToken ct)
+    readonly object _gate = new();
+    WaveOutEvent? _output;
+    AudioFileReader? _reader;
+
+    public bool IsPlaying
     {
-        Stop(); _reader = new AudioFileReader(file) { Volume = volume }; _output = new WaveOutEvent { DeviceNumber = device };
-        var done = new TaskCompletionSource(); _output.PlaybackStopped += (_,_) => done.TrySetResult(); _output.Init(_reader); _output.Play();
-        ct.Register(Stop); return done.Task;
+        get { lock (_gate) return _output?.PlaybackState == PlaybackState.Playing; }
     }
-    public void Stop() { _output?.Stop(); _output?.Dispose(); _reader?.Dispose(); _output=null; _reader=null; }
+
+    public async Task PlayAsync(string file, float volume, int device, CancellationToken ct)
+    {
+        Stop();
+        ct.ThrowIfCancellationRequested();
+        var reader = new AudioFileReader(file) { Volume = volume };
+        WaveOutEvent? output = null;
+        try
+        {
+            output = new WaveOutEvent { DeviceNumber = device };
+            var finished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            output.PlaybackStopped += (_, args) =>
+            {
+                if (args.Exception is null) finished.TrySetResult();
+                else finished.TrySetException(args.Exception);
+            };
+            output.Init(reader);
+            lock (_gate) { _reader = reader; _output = output; }
+            using var registration = ct.Register(Stop);
+            ct.ThrowIfCancellationRequested();
+            output.Play();
+            await finished.Task.WaitAsync(ct);
+        }
+        finally
+        {
+            Stop(); // Release the WAV handle before Piper deletes its temporary file.
+            output?.Dispose();
+            reader.Dispose();
+        }
+    }
+
+    public void Stop()
+    {
+        WaveOutEvent? output;
+        AudioFileReader? reader;
+        lock (_gate)
+        {
+            output = _output;
+            reader = _reader;
+            _output = null;
+            _reader = null;
+        }
+        if (output is not null)
+        {
+            try { output.Stop(); }
+            finally { output.Dispose(); }
+        }
+        reader?.Dispose();
+    }
+
     public void Dispose() => Stop();
 }

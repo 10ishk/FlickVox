@@ -24,6 +24,8 @@ public partial class MainWindow : Window
     OverlayWindow? _overlay;
     NotifyIcon? _tray;
     bool _isBusy;
+    bool _exitRequested;
+    int _speechVersion;
 
     public MainWindow()
     {
@@ -64,10 +66,15 @@ public partial class MainWindow : Window
         var menu = new ContextMenuStrip();
         menu.Items.Add("Open FlickVox", null, (_, _) => { Show(); Activate(); });
         menu.Items.Add("Open compact overlay", null, (_, _) => ShowOverlay());
-        menu.Items.Add("Stop speech", null, (_, _) => _speech.Stop());
+        menu.Items.Add("Stop speech", null, (_, _) => StopSpeech());
         menu.Items.Add("Repeat last message", null, async (_, _) => await RepeatAsync());
         menu.Items.Add("Settings", null, (_, _) => OpenSettings(this, new RoutedEventArgs()));
-        menu.Items.Add("Exit", null, (_, _) => { _tray!.Visible = false; System.Windows.Application.Current.Shutdown(); });
+        menu.Items.Add("Exit", null, (_, _) =>
+        {
+            _exitRequested = true;
+            _tray!.Visible = false;
+            System.Windows.Application.Current.Shutdown();
+        });
         _tray.ContextMenuStrip = menu;
         _tray.DoubleClick += (_, _) => { Show(); Activate(); };
     }
@@ -108,21 +115,29 @@ public partial class MainWindow : Window
 
     async void PrimaryAction(object sender, RoutedEventArgs e)
     {
-        if (_isBusy) { _speech.Stop(); SetBusy(false); SetStatus("Ready"); return; }
+        if (_isBusy) { StopSpeech(); return; }
         await SpeakAsync(Input.Text);
+    }
+
+    void StopSpeech()
+    {
+        _speechVersion++;
+        _speech.Stop();
+        SetStatus("Ready");
     }
 
     async Task SpeakAsync(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return;
+        var version = ++_speechVersion;
         Notice.Visibility = Visibility.Collapsed;
         AddHistory(text);
         SetBusy(true);
         SetStatus("Generating");
-        try { await _speech.SpeakAsync(text, s => Dispatcher.Invoke(() => SetStatus(s))); }
-        catch (OperationCanceledException) { SetStatus("Ready"); }
-        catch (Exception ex) { ShowNotice(ex.Message, ex.Message.Contains("voice", StringComparison.OrdinalIgnoreCase)); }
-        finally { SetBusy(false); if (StatusText.Text is "Preparing" or "Speaking") SetStatus("Ready"); }
+        try { await _speech.SpeakAsync(text, s => Dispatcher.Invoke(() => { if (version == _speechVersion) SetStatus(s); })); }
+        catch (OperationCanceledException) { if (version == _speechVersion) SetStatus("Ready"); }
+        catch (Exception ex) { if (version == _speechVersion) ShowNotice(ex.Message, ex.Message.Contains("voice", StringComparison.OrdinalIgnoreCase)); }
+        finally { if (version == _speechVersion) { SetBusy(false); if (StatusText.Text is "Preparing" or "Speaking") SetStatus("Ready"); } }
     }
 
     async void Repeat(object sender, RoutedEventArgs e) => await RepeatAsync();
@@ -145,7 +160,7 @@ public partial class MainWindow : Window
     void InputKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
         if (e.Key == Key.Enter && !Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)) { e.Handled = true; _ = SpeakAsync(Input.Text); }
-        else if (e.Key == Key.Escape) { _speech.Stop(); SetStatus("Ready"); }
+        else if (e.Key == Key.Escape) StopSpeech();
         else if (e.Key == Key.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) { e.Handled = true; Input.Clear(); }
         else if (e.Key == Key.S && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) { e.Handled = true; SavePhrase(sender, e); }
         else if (e.Key == Key.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) { e.Handled = true; _ = RepeatAsync(); }
@@ -297,10 +312,10 @@ public partial class MainWindow : Window
     void ShowOverlay() { _overlay ??= new OverlayWindow(this, _speech, _settings); _overlay.ShowAndFocus(); }
     void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        if (System.Windows.Application.Current.ShutdownMode != ShutdownMode.OnExplicitShutdown) { e.Cancel = true; Hide(); }
+        if (!_exitRequested) { e.Cancel = true; Hide(); }
         _settings.Current.OutputDevice = Output.SelectedIndex - 1;
         _settings.Current.HideOverlayAfterSpeaking = HideAfter.IsChecked == true;
         _settings.Save();
     }
-    protected override void OnClosed(EventArgs e) { _tray?.Dispose(); _hotkey.Dispose(); _audio.Dispose(); base.OnClosed(e); }
+    protected override void OnClosed(EventArgs e) { _speech.Stop(); _tray?.Dispose(); _hotkey.Dispose(); _audio.Dispose(); base.OnClosed(e); }
 }

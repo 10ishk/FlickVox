@@ -52,18 +52,30 @@ public partial class OverlayWindow : Window
         var scaleX = dpi.DpiScaleX == 0 ? 1 : dpi.DpiScaleX;
         var scaleY = dpi.DpiScaleY == 0 ? 1 : dpi.DpiScaleY;
         var saved = _settings.Current;
-        var valid = !double.IsNaN(saved.OverlayLeft) && !double.IsNaN(saved.OverlayTop) &&
-                    Screen.AllScreens.Any(s =>
-                    {
-                        var a = s.WorkingArea;
-                        var x = saved.OverlayLeft * scaleX;
-                        var y = saved.OverlayTop * scaleY;
-                        return x + 60 > a.Left && x < a.Right - 60 && y + 40 > a.Top && y < a.Bottom - 40;
-                    });
+        var savedScreen = double.IsFinite(saved.OverlayLeft) && double.IsFinite(saved.OverlayTop)
+            ? Screen.AllScreens.FirstOrDefault(s =>
+            {
+                var a = s.WorkingArea;
+                var x = saved.OverlayLeft * scaleX;
+                var y = saved.OverlayTop * scaleY;
+                return x >= a.Left && x < a.Right && y >= a.Top && y < a.Bottom;
+            })
+            : null;
         var area = foreground.WorkingArea;
         _positionReady = false;
-        Left = valid ? saved.OverlayLeft : (area.Left + (area.Width - Width * scaleX) / 2) / scaleX;
-        Top = valid ? saved.OverlayTop : (area.Bottom - Height * scaleY - area.Height * .12) / scaleY;
+        if (savedScreen is not null)
+        {
+            var visible = savedScreen.WorkingArea;
+            Left = Math.Clamp(saved.OverlayLeft * scaleX, visible.Left,
+                Math.Max(visible.Left, visible.Right - Width * scaleX)) / scaleX;
+            Top = Math.Clamp(saved.OverlayTop * scaleY, visible.Top,
+                Math.Max(visible.Top, visible.Bottom - Height * scaleY)) / scaleY;
+        }
+        else
+        {
+            Left = (area.Left + (area.Width - Width * scaleX) / 2) / scaleX;
+            Top = (area.Bottom - Height * scaleY - area.Height * .12) / scaleY;
+        }
         _positionReady = true;
     }
 
@@ -84,8 +96,8 @@ public partial class OverlayWindow : Window
             _history.Remove(text);
             _history.Insert(0, text);
             _cursor = -1;
-            if (_settings.Current.HideOverlayAfterSpeaking) { SavePosition(); Hide(); }
-            else Input.Clear();
+            var hideWhenDone = _settings.Current.HideOverlayAfterSpeaking;
+            if (!hideWhenDone) Input.Clear();
             SetState("Preparing");
             try
             {
@@ -96,6 +108,12 @@ public partial class OverlayWindow : Window
                     _ => "Ready"
                 })));
                 SetState("Ready");
+                if (hideWhenDone)
+                {
+                    Input.Clear();
+                    SavePosition();
+                    Hide();
+                }
             }
             catch (OperationCanceledException) { SetState("Ready"); }
             catch { SetState("Error"); }

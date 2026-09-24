@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param([switch]$SkipVoices)
 $ErrorActionPreference = 'Stop'
-$appRoot = Join-Path $env:LOCALAPPDATA 'Programs\FlickVox'; $dataRoot = Join-Path $env:LOCALAPPDATA 'FlickVox'; $runtimeRoot = Join-Path $dataRoot 'runtime'; $piperRoot = Join-Path $runtimeRoot 'piper'; $voiceRoot = Join-Path $runtimeRoot 'voices'; $publishRoot = Join-Path $PSScriptRoot '..\src\FlickVox\bin\Release\net10.0-windows\win-x64\publish'
+$appRoot = Join-Path $env:LOCALAPPDATA 'Programs\FlickVox'; $dataRoot = Join-Path $env:LOCALAPPDATA 'FlickVox'; $runtimeRoot = Join-Path $dataRoot 'runtime'; $piperRoot = Join-Path $runtimeRoot 'piper'; $voiceRoot = Join-Path $runtimeRoot 'voices'; $publishRoot = Join-Path $PSScriptRoot '..\src\FlickVox\bin\Release\publish'
 function Get-AtomicFile([string]$Url, [string]$Target) { $temporary = "$Target.download"; try { Invoke-WebRequest -Uri $Url -OutFile $temporary -UseBasicParsing; if ((Get-Item $temporary).Length -lt 1024) { throw "Downloaded file is unexpectedly small: $Url" }; Move-Item $temporary $Target -Force } finally { if (Test-Path $temporary) { Remove-Item -LiteralPath $temporary -Force } } }
 if (!(Test-Path $publishRoot)) { throw 'Publish files not found. Run the documented dotnet publish command first.' }
 New-Item -ItemType Directory -Force -Path $appRoot,$piperRoot,$voiceRoot | Out-Null; Copy-Item "$publishRoot\*" $appRoot -Recurse -Force

@@ -5,8 +5,8 @@ public sealed class VoiceManager
 {
     private const string Base = "https://huggingface.co/rhasspy/piper-voices/resolve/main";
     public static readonly IReadOnlyList<VoiceDefinition> Voices = new[] {
-      Voice("en_US-ryan-low", "Ryan Low", 17), Voice("en_US-ryan-medium", "Ryan Medium", 63), Voice("en_US-ryan-high", "Ryan High", 63),
-      Voice("en_US-lessac-low", "Lessac Low", 32), Voice("en_US-lessac-medium", "Lessac Medium", 63), Voice("en_US-lessac-high", "Lessac High", 63) };
+      Voice("en_US-ryan-low", "Ryan Low", 60), Voice("en_US-ryan-medium", "Ryan Medium", 60), Voice("en_US-ryan-high", "Ryan High", 115),
+      Voice("en_US-lessac-low", "Lessac Low", 60), Voice("en_US-lessac-medium", "Lessac Medium", 60), Voice("en_US-lessac-high", "Lessac High", 109) };
     private readonly string _voices = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FlickVox", "runtime", "voices");
     public VoiceManager() => Directory.CreateDirectory(_voices);
     private static VoiceDefinition Voice(string id, string name, int mb) { var parts=id.Split('-'); var stem=$"en/en_US/{parts[1]}/{parts[2]}/{id}"; return new(id,name,mb*1024L*1024,$"{Base}/{stem}.onnx?download=true",$"{Base}/{stem}.onnx.json?download=true"); }
