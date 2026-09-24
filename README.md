@@ -4,7 +4,7 @@ FlickVox is a lightweight, fully offline Windows text-to-speech app for everyday
 
 ## Framework decision
 
-WPF was selected over WinUI 3 for version 0.1.0: it has a smaller, more direct desktop deployment path and mature support for borderless overlay windows, global hotkeys, tray integration, and NAudio. The UI uses original Fluent-inspired WPF styling rather than a UI framework.
+WPF was selected over WinUI 3 for version 0.1.0: it has a smaller, more direct desktop deployment path and mature support for the unified quick-pill window, global hotkeys, tray integration, and NAudio. The UI uses original Fluent-inspired WPF styling rather than a UI framework.
 
 ## Features
 
@@ -41,7 +41,7 @@ Screenshots will be added after hardware/UI validation.
 
 ## Limitations and manual testing
 
-Global hotkeys may conflict with another application. Focus restoration after hiding the overlay uses normal Windows activation behavior and cannot guarantee exclusive-fullscreen game support. Piper is started per request for reliability; long-message streaming/model persistence is not implemented in 0.1.0. Test the selected Piper build, every voice download, audio devices, scaling, overlay positions, startup integration, and code signing on a normal Windows desktop before release.
+Global hotkeys may conflict with another application. Focus restoration after hiding the quick pill uses normal Windows activation behavior and cannot guarantee exclusive-fullscreen game support. Piper is started per request for reliability; long-message streaming/model persistence is not implemented in 0.1.0. Test the selected Piper build, every voice download, audio devices, scaling, quick-pill positions, startup integration, and code signing on a normal Windows desktop before release.
 
 ## Security and signing
 

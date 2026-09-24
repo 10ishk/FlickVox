@@ -25,7 +25,7 @@
               <TextBlock Text="General" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
               <CheckBox x:Name="HideAfter" Style="{StaticResource ToggleSwitch}" Content="Hide quick pill after successful playback"
                         Checked="HideAfterChanged" Unchecked="HideAfterChanged"/>
-              <TextBlock Text="On errors or cancellation, your draft stays in the overlay. When off, the overlay stays open."
+              <TextBlock Text="On errors or cancellation, your draft stays in the quick pill. When off, the quick pill stays open."
                          Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,5,0,0"/>
               <CheckBox x:Name="PersistHistory" Style="{StaticResource ToggleSwitch}" Content="Keep recent messages between sessions"
                         Checked="PersistHistoryChanged" Unchecked="PersistHistoryChanged" Margin="0,18,0,0"/>
@@ -51,18 +51,18 @@
               <TextBlock Text="For Discord or games, route this output through a virtual audio device (such as Wave Link) and select that device as the microphone in the other app."
                          Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,14,0,0"/>
             </StackPanel>
-            <StackPanel x:Name="OverlayPanel" Visibility="Collapsed">
+            <StackPanel x:Name="CompactPanel" Visibility="Collapsed">
               <TextBlock Text="Compact window" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
               <CheckBox x:Name="AlwaysOnTop" Style="{StaticResource ToggleSwitch}" Content="Keep FlickVox above other windows"
                         Checked="AlwaysOnTopChanged" Unchecked="AlwaysOnTopChanged" Margin="0,0,0,16"/>
               <TextBlock Text="Quick pill width" Style="{StaticResource FieldLabel}"/>
-              <Slider x:Name="OverlayWidth" Minimum="320" Maximum="800" TickFrequency="20"
-                      ValueChanged="OverlayWidthChanged" Margin="0,8,0,4"/>
-              <TextBlock x:Name="OverlayWidthValue" HorizontalAlignment="Right" Foreground="{DynamicResource Brush.AccentText}"/>
-              <Button Content="Reset window position" Click="ResetOverlayPosition" HorizontalAlignment="Left" Margin="0,16,0,0"/>
+              <Slider x:Name="QuickPillWidth" Minimum="320" Maximum="800" TickFrequency="20"
+                      ValueChanged="QuickPillWidthChanged" Margin="0,8,0,4"/>
+              <TextBlock x:Name="QuickPillWidthValue" HorizontalAlignment="Right" Foreground="{DynamicResource Brush.AccentText}"/>
+              <Button Content="Reset window position" Click="ResetWindowPosition" HorizontalAlignment="Left" Margin="0,16,0,0"/>
               <TextBlock Text="Global quick-pill shortcut" Style="{StaticResource FieldLabel}" Margin="0,16,0,0"/>
               <ComboBox x:Name="Hotkey" IsEditable="True" SelectionChanged="HotkeyChanged" LostFocus="HotkeyLostFocus" Margin="0,6,0,0"
-                        AutomationProperties.Name="Global overlay shortcut">
+                        AutomationProperties.Name="Global quick-pill shortcut">
                 <ComboBoxItem Content="Ctrl+Alt+T"/><ComboBoxItem Content="Ctrl+Alt+V"/><ComboBoxItem Content="Ctrl+Shift+T"/>
               </ComboBox>
               <TextBlock x:Name="HotkeyError" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap" Margin="0,5,0,0" Visibility="Collapsed"/>

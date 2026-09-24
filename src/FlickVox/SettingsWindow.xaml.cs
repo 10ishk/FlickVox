@@ -30,7 +30,7 @@ public partial class SettingsWindow : Window
         PersistHistory.IsChecked = settings.Current.PersistHistory;
         Hotkey.Text = hotkey.Current;
         AlwaysOnTop.IsChecked = settings.Current.AlwaysOnTop;
-        OverlayWidth.Value = Math.Clamp(settings.Current.UnifiedQuickWidth, OverlayWidth.Minimum, OverlayWidth.Maximum);
+        QuickPillWidth.Value = Math.Clamp(settings.Current.UnifiedQuickWidth, QuickPillWidth.Minimum, QuickPillWidth.Maximum);
         ComposerSize.Value = settings.Current.ComposerFontSize;
         Theme.SelectedIndex = settings.Current.Theme switch { "Light" => 1, "System" => 2, _ => 0 };
         ComposerFont.SelectedIndex = settings.Current.ComposerFont switch { "Atkinson Hyperlegible" => 1, "System" => 2, _ => 0 };
@@ -48,14 +48,14 @@ public partial class SettingsWindow : Window
     void SectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (GeneralPanel is null) return;
-        var panels = new[] { GeneralPanel, AudioPanel, OverlayPanel, AppearancePanel, AccessibilityPanel, AboutPanel };
+        var panels = new[] { GeneralPanel, AudioPanel, CompactPanel, AppearancePanel, AccessibilityPanel, AboutPanel };
         for (var i = 0; i < panels.Length; i++) panels[i].Visibility = i == Sections.SelectedIndex ? Visibility.Visible : Visibility.Collapsed;
     }
     void UpdateValues()
     {
         SpeedValue.Text = $"{Speed.Value:F2}×";
         VolumeValue.Text = $"{Volume.Value:P0}";
-        OverlayWidthValue.Text = $"{OverlayWidth.Value:F0} px";
+        QuickPillWidthValue.Text = $"{QuickPillWidth.Value:F0} px";
         ComposerSizeValue.Text = $"{ComposerSize.Value:F0} px";
     }
     void VoiceChanged(object sender, SelectionChangedEventArgs e)
@@ -107,11 +107,11 @@ public partial class SettingsWindow : Window
         }
     }
     void AlwaysOnTopChanged(object sender, RoutedEventArgs e) => Save(s => s.AlwaysOnTop = AlwaysOnTop.IsChecked == true);
-    void OverlayWidthChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    void QuickPillWidthChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (OverlayWidthValue is null) return;
-        OverlayWidthValue.Text = $"{OverlayWidth.Value:F0} px";
-        Save(s => s.UnifiedQuickWidth = OverlayWidth.Value);
+        if (QuickPillWidthValue is null) return;
+        QuickPillWidthValue.Text = $"{QuickPillWidth.Value:F0} px";
+        Save(s => s.UnifiedQuickWidth = QuickPillWidth.Value);
     }
     void ComposerSizeChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
@@ -131,7 +131,7 @@ public partial class SettingsWindow : Window
         if (!_ready) return;
         Save(s => s.ComposerFont = ComposerFont.SelectedIndex switch { 1 => "Atkinson Hyperlegible", 2 => "System", _ => "Inter" });
     }
-    void ResetOverlayPosition(object sender, RoutedEventArgs e)
+    void ResetWindowPosition(object sender, RoutedEventArgs e)
     {
         Save(s => { s.UnifiedLeft = double.NaN; s.UnifiedTop = double.NaN; });
     }

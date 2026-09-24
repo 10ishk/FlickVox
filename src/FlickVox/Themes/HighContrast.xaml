@@ -20,5 +20,4 @@
   <SolidColorBrush x:Key="Brush.SignalSubtle" Color="{x:Static SystemColors.WindowColor}"/>
   <SolidColorBrush x:Key="Brush.Danger" Color="{x:Static SystemColors.WindowTextColor}"/>
   <SolidColorBrush x:Key="Brush.Warning" Color="{x:Static SystemColors.WindowTextColor}"/>
-  <SolidColorBrush x:Key="Brush.OverlayBg" Color="{x:Static SystemColors.WindowColor}"/>
 </ResourceDictionary>

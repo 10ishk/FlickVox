@@ -150,13 +150,14 @@ public partial class MainWindow : Window
         Shell.CornerRadius = new CornerRadius(expanded ? 14 : 24);
         ComposerCard.CornerRadius = new CornerRadius(expanded ? 10 : 24);
         ComposerCard.Margin = expanded ? new Thickness(12, 5, 12, 7) : new Thickness();
-        ComposerCard.Height = expanded ? 84 : Math.Clamp(_settings.Current.UnifiedQuickHeight, 48, 168) - 2;
+        var quickHeight = Math.Max(Math.Clamp(_settings.Current.UnifiedQuickHeight, 48, 168),
+            Math.Min(64, Input.FontSize + 18));
+        ComposerCard.Height = expanded ? 84 : quickHeight - 2;
         ComposerCard.BorderThickness = expanded ? new Thickness(1) : new Thickness(0);
         MinWidth = expanded ? 380 : 320;
         Width = expanded ? Math.Clamp(_settings.Current.UnifiedExpandedWidth, 380, 800)
                          : Math.Clamp(_settings.Current.UnifiedQuickWidth, 320, 800);
-        Height = expanded ? Math.Clamp(_settings.Current.UnifiedExpandedHeight, 260, 600)
-                          : Math.Clamp(_settings.Current.UnifiedQuickHeight, 48, 168);
+        Height = expanded ? ExpandedContentHeight() : quickHeight;
         if (IsVisible) ClampToWorkingArea();
         _positionReady = true;
         if (persist)
@@ -164,6 +165,13 @@ public partial class MainWindow : Window
             _settings.Current.UnifiedExpanded = expanded;
             _settings.Save();
         }
+    }
+
+    double ExpandedContentHeight()
+    {
+        var contentHeight = 240 + Math.Min(_phrases.Items.Count, 2) * 30
+            + (Notice.Visibility == Visibility.Visible ? 35 : 0);
+        return Math.Min(Math.Clamp(_settings.Current.UnifiedExpandedHeight, 260, 600), contentHeight);
     }
 
     void Expand(object sender, RoutedEventArgs e) => SetMode(true);
@@ -249,6 +257,7 @@ public partial class MainWindow : Window
             if (_expanded) Notice.Visibility = Visibility.Visible;
         }
         else { NoticeText.Text = ""; Notice.Visibility = Visibility.Collapsed; }
+        if (_expanded) Height = ExpandedContentHeight();
         SetUiState(string.IsNullOrEmpty(Input.Text) ? UiState.Idle : UiState.Typing);
     }
 
@@ -278,7 +287,7 @@ public partial class MainWindow : Window
             UiState.Error => "Brush.Danger",
             _ => "Brush.StrokeControl"
         });
-        SendIcon.Data = (Geometry)FindResource(_busy ? "Icon.Stop" : "Icon.Speaker2");
+        SendIcon.Data = (Geometry)FindResource(_busy ? "Icon.Stop" : "Icon.Send");
         SendButton.Background = (Brush)FindResource(state switch
         {
             UiState.Speaking => "Brush.Canvas",
@@ -301,12 +310,14 @@ public partial class MainWindow : Window
         NoticeAction.Visibility = setupAction ? Visibility.Visible : Visibility.Collapsed;
         if (!_expanded) SetMode(true);
         Notice.Visibility = Visibility.Visible;
+        Height = ExpandedContentHeight();
         SetUiState(UiState.Error);
     }
     void DismissNotice(object sender, RoutedEventArgs e)
     {
         Notice.Visibility = Visibility.Collapsed;
         NoticeText.Text = "";
+        if (_expanded) Height = ExpandedContentHeight();
         if (DependenciesReady() && !_settings.Current.FirstSpeechConfirmed)
         {
             _settings.Current.FirstRunGuidanceDismissed = true;
@@ -330,6 +341,7 @@ public partial class MainWindow : Window
         if (string.IsNullOrWhiteSpace(text)) return;
         var version = ++_speechVersion;
         Notice.Visibility = Visibility.Collapsed;
+        if (_expanded) Height = ExpandedContentHeight();
         _history.Add(text);
         _historyCursor = -1;
         SetUiState(UiState.Preparing);
@@ -398,7 +410,11 @@ public partial class MainWindow : Window
         if (!_busy && _state != UiState.Error)
             SetUiState(string.IsNullOrEmpty(Input.Text) ? UiState.Idle : UiState.Typing);
     }
-    void UpdatePlaceholder() => InputPlaceholder.Visibility = string.IsNullOrEmpty(Input.Text) ? Visibility.Visible : Visibility.Collapsed;
+    void UpdatePlaceholder()
+    {
+        InputPlaceholder.Visibility = string.IsNullOrEmpty(Input.Text) ? Visibility.Visible : Visibility.Collapsed;
+        if (SaveButton is not null) SaveButton.IsEnabled = !string.IsNullOrWhiteSpace(Input.Text);
+    }
     void InputKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
         if (e.Key == Key.Enter && !Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)) { e.Handled = true; _ = SpeakAsync(Input.Text); }
@@ -441,7 +457,8 @@ public partial class MainWindow : Window
     {
         PhraseChips.ItemsSource = _phrases.Items.Select((p, i) =>
             new PhraseChip(p, i < 9 ? (i + 1).ToString() : "", p.Name,
-                i < 9 ? $"{p.Text} · Alt+{i + 1} · Right-click to edit or delete" : $"{p.Text} · Right-click to edit or delete")).ToList();
+                i < 9 ? $"{p.Name}\n{p.Text}\nAlt+{i + 1} · Right-click to edit or delete" : $"{p.Name}\n{p.Text}\nRight-click to edit or delete")).ToList();
+        if (_expanded) Height = ExpandedContentHeight();
     }
     void PlayPhraseText(SavedPhrase phrase)
     {

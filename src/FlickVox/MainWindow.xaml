@@ -43,7 +43,7 @@
   <Border x:Name="Shell" CornerRadius="14" Background="{DynamicResource Brush.Canvas}"
           BorderBrush="{DynamicResource Brush.StrokeControl}" BorderThickness="1">
     <Grid>
-      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
 
       <Grid x:Name="Header" Height="34" Grid.Row="0" Background="Transparent" MouseLeftButtonDown="Drag">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
@@ -77,12 +77,12 @@
               <StackPanel><Ellipse Width="2.5" Height="2.5" Fill="{DynamicResource Brush.TextTertiary}" Margin="1.5"/><Ellipse Width="2.5" Height="2.5" Fill="{DynamicResource Brush.TextTertiary}" Margin="1.5"/></StackPanel>
             </StackPanel>
           </Border>
-          <Grid Grid.Column="1" Margin="5,0,4,0">
+          <Grid Grid.Column="1" Margin="5,0,4,0" MinWidth="0">
             <TextBox x:Name="Input" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
                      VerticalContentAlignment="Center" FontSize="14" Background="Transparent"
                      TextChanged="InputChanged" KeyDown="InputKeyDown" AutomationProperties.Name="Text to speak"/>
             <TextBlock x:Name="InputPlaceholder" Text="Type, press Enter to speak" FontSize="14"
-                       Foreground="{DynamicResource Brush.TextTertiary}" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                       Foreground="{DynamicResource Brush.TextTertiary}" VerticalAlignment="Center" IsHitTestVisible="False" TextTrimming="CharacterEllipsis"/>
           </Grid>
           <Button x:Name="ExpandQuickButton" Grid.Column="2" Style="{StaticResource IconButton}" Width="25" Height="25"
                   Click="Expand" ToolTip="Expand FlickVox" AutomationProperties.Name="Expand FlickVox">
@@ -96,7 +96,7 @@
           <Button x:Name="SendButton" Grid.Column="4" Style="{StaticResource SendActionButton}" Width="32" Height="32" Padding="0" Click="SendOrStop"
                   Background="{DynamicResource Brush.PrimaryAction}" BorderBrush="{DynamicResource Brush.PrimaryAction}"
                   ToolTip="Speak · Enter" AutomationProperties.Name="Speak">
-            <Path x:Name="SendIcon" Data="{StaticResource Icon.Speaker2}" Fill="{DynamicResource Brush.OnPrimary}" Width="17" Height="17" Stretch="Uniform"/>
+            <Path x:Name="SendIcon" Data="{StaticResource Icon.Send}" Fill="{DynamicResource Brush.OnPrimary}" Width="17" Height="17" Stretch="Uniform"/>
           </Button>
         </Grid>
       </Border>
@@ -107,26 +107,26 @@
           <Button Grid.Column="1" Style="{StaticResource QuietFooterButton}" Content="Repeat" Click="Repeat"
                   x:Name="RepeatButton" IsEnabled="False" ToolTip="Repeat last message · Ctrl+R"/>
         </Grid>
-        <ScrollViewer MaxHeight="95" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ScrollViewer x:Name="PhraseListScroll" MaxHeight="95" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
             <ItemsControl x:Name="PhraseChips">
               <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate><DataTemplate>
                 <Button Style="{StaticResource PhraseChipButton}" Tag="{Binding Phrase}" Click="PlayPhrase"
-                        ToolTip="{Binding Hint}" Margin="0,0,6,6">
+                        ToolTip="{Binding Hint}" Margin="0,0,6,6" MaxWidth="184">
                   <Button.ContextMenu><ContextMenu>
                     <MenuItem Header="Speak" Tag="{Binding PlacementTarget.Tag,RelativeSource={RelativeSource AncestorType=ContextMenu}}" Click="PlayPhrase"/>
                     <MenuItem Header="Edit or rename" Tag="{Binding PlacementTarget.Tag,RelativeSource={RelativeSource AncestorType=ContextMenu}}" Click="EditPhrase"/>
                     <MenuItem Header="Delete" Tag="{Binding PlacementTarget.Tag,RelativeSource={RelativeSource AncestorType=ContextMenu}}" Click="DeletePhrase"/>
                   </ContextMenu></Button.ContextMenu>
                   <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{Binding Shortcut}" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,5,0"/>
-                    <TextBlock Text="{Binding Name}" MaxWidth="130" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding Shortcut}" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,5,0" MinWidth="9"/>
+                    <TextBlock Text="{Binding Name}" MaxWidth="145" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                   </StackPanel>
                 </Button>
               </DataTemplate></ItemsControl.ItemTemplate>
             </ItemsControl>
-            <Button x:Name="SaveButton" Style="{StaticResource SaveCurrentChip}" Click="SavePhrase" Margin="0,0,0,6"
+            <Button x:Name="SaveButton" Style="{StaticResource SaveCurrentChip}" Click="SavePhrase" Margin="0,0,0,6" IsEnabled="False"
                     ToolTip="Save current text · Ctrl+S">
               <StackPanel Orientation="Horizontal">
                 <Path Data="{StaticResource Icon.Add}" Fill="{DynamicResource Brush.TextSecondary}" Width="13" Height="13" Stretch="Uniform" Margin="0,0,5,0"/>

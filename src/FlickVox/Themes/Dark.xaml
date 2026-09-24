@@ -20,5 +20,4 @@
   <SolidColorBrush x:Key="Brush.SignalSubtle" Color="#123A2B"/>
   <SolidColorBrush x:Key="Brush.Danger" Color="#F0616D"/>
   <SolidColorBrush x:Key="Brush.Warning" Color="#F2B441"/>
-  <SolidColorBrush x:Key="Brush.OverlayBg" Color="#0E1015"/>
 </ResourceDictionary>
