@@ -15,5 +15,8 @@ public sealed class AppSettings
     public bool AlwaysOnTop { get; set; } = true;
     public bool PersistHistory { get; set; }
 }
-public sealed record VoiceDefinition(string Id, string DisplayName, long ApproximateBytes, string ModelUrl, string ConfigUrl);
+public sealed record VoiceDefinition(string Id, string DisplayName, long ApproximateBytes, string ModelUrl, string ConfigUrl)
+{
+    public override string ToString() => DisplayName.Replace(" ", " · ");
+}
 public sealed record SavedPhrase(Guid Id, string Name, string Text, string? Shortcut = null);
