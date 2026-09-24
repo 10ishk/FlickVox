@@ -7,10 +7,14 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\FlickVox.ico</ApplicationIcon>
     <AssemblyName>FlickVox</AssemblyName>
     <Version>0.1.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NAudio" Version="2.2.1" />
+    <Resource Include="Assets\Fonts\*.ttf" />
+    <Resource Include="Assets\FlickVox.ico" />
+    <Content Include="Assets\FlickVoxTray.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

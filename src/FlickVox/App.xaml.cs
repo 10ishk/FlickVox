@@ -6,6 +6,7 @@ public partial class App : System.Windows.Application
     {
         _instance = new Mutex(true, "FlickVox.SingleInstance", out var created);
         if (!created) { Current.Shutdown(); return; }
+        Infrastructure.ThemeManager.Initialize(new Services.SettingsService().Current.Theme);
         base.OnStartup(e);
     }
     protected override void OnExit(ExitEventArgs e) { _instance?.Dispose(); base.OnExit(e); }

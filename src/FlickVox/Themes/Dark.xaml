@@ -1,0 +1,21 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <SolidColorBrush x:Key="Brush.Canvas" Color="#0F1218"/>
+  <SolidColorBrush x:Key="Brush.Surface" Color="#161A22"/>
+  <SolidColorBrush x:Key="Brush.SurfaceRaised" Color="#1D222C"/>
+  <SolidColorBrush x:Key="Brush.SurfaceHover" Color="#252B37"/>
+  <SolidColorBrush x:Key="Brush.StrokeSubtle" Color="#262D39"/>
+  <SolidColorBrush x:Key="Brush.StrokeControl" Color="#65718A"/>
+  <SolidColorBrush x:Key="Brush.Text" Color="#EEF1F6"/>
+  <SolidColorBrush x:Key="Brush.TextSecondary" Color="#A9B2C1"/>
+  <SolidColorBrush x:Key="Brush.TextTertiary" Color="#8592A5"/>
+  <SolidColorBrush x:Key="Brush.Accent" Color="#4F46E5"/>
+  <SolidColorBrush x:Key="Brush.AccentHover" Color="#5B54F0"/>
+  <SolidColorBrush x:Key="Brush.AccentPressed" Color="#4338CA"/>
+  <SolidColorBrush x:Key="Brush.AccentText" Color="#A5ADFF"/>
+  <SolidColorBrush x:Key="Brush.AccentSubtle" Color="#294F46E5"/>
+  <SolidColorBrush x:Key="Brush.Signal" Color="#3DDBB5"/>
+  <SolidColorBrush x:Key="Brush.SignalSubtle" Color="#263DDBB5"/>
+  <SolidColorBrush x:Key="Brush.Danger" Color="#FF7A7A"/>
+  <SolidColorBrush x:Key="Brush.Warning" Color="#F5B94C"/>
+  <SolidColorBrush x:Key="Brush.OverlayBg" Color="#F012161C"/>
+</ResourceDictionary>

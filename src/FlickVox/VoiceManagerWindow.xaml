@@ -1,1 +1,78 @@
-<Window x:Class="FlickVox.VoiceManagerWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Voices" Width="720" Height="560" MinWidth="560" Background="{DynamicResource Brush.Canvas}" Foreground="{DynamicResource Brush.Text}" TextElement.Foreground="{DynamicResource Brush.Text}" WindowStartupLocation="CenterOwner"><Grid Margin="24"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="16"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions><StackPanel><TextBlock Text="Voices" FontSize="24" FontWeight="SemiBold"/><TextBlock Text="All voices run on your PC. Nothing is sent online." Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,4,0,0"/></StackPanel><Border Grid.Row="2" Style="{StaticResource Card}" Padding="12"><ListView x:Name="List" Background="Transparent" BorderThickness="0"><ListView.View><GridView><GridViewColumn Header="Voice" Width="260" DisplayMemberBinding="{Binding Name}"/><GridViewColumn Header="Quality" Width="130" DisplayMemberBinding="{Binding Size}"/><GridViewColumn Header="Status" Width="150" DisplayMemberBinding="{Binding Status}"/></GridView></ListView.View></ListView></Border><DockPanel Grid.Row="3" Margin="0,16,0,0"><TextBlock x:Name="Progress" VerticalAlignment="Center" Foreground="{DynamicResource Brush.TextSecondary}"/><StackPanel DockPanel.Dock="Right" Orientation="Horizontal"><Button Style="{StaticResource PrimaryButton}" MinWidth="0" Content="Download / reinstall" Click="Download"/><Button Content="Remove" Click="Remove" Margin="8,0,0,0"/><Button Content="Close" Click="Close" Margin="8,0,0,0"/></StackPanel></DockPanel></Grid></Window>
+<Window x:Class="FlickVox.VoiceManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Voices" Icon="Assets/FlickVox.ico" Width="720" Height="560" MinWidth="560" MinHeight="440"
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource Brush.Canvas}"
+        Foreground="{DynamicResource Brush.Text}" TextElement.Foreground="{DynamicResource Brush.Text}"
+        PreviewKeyDown="WindowKeyDown">
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="VisibleWhenTrue"/>
+    <Style x:Key="VoiceRow" TargetType="Border">
+      <Setter Property="Background" Value="{DynamicResource Brush.SurfaceRaised}"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="12,8"/>
+      <Setter Property="Margin" Value="0,0,0,4"/>
+    </Style>
+    <DataTemplate x:Key="VoiceItem">
+      <Border Style="{StaticResource VoiceRow}">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <StackPanel>
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="{Binding Quality}" FontWeight="SemiBold"/>
+              <TextBlock Text="  Selected" Foreground="{DynamicResource Brush.AccentText}"
+                         Visibility="{Binding Selected,Converter={StaticResource VisibleWhenTrue}}"/>
+            </StackPanel>
+            <TextBlock Text="{Binding Detail}" FontSize="12" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,3,0,0"/>
+          </StackPanel>
+          <TextBlock Grid.Column="1" Text="{Binding Size}" Foreground="{DynamicResource Brush.TextSecondary}"
+                     Margin="8,0,12,0" VerticalAlignment="Center"/>
+          <TextBlock Grid.Column="2" Text="{Binding Status}" Foreground="{DynamicResource Brush.TextSecondary}"
+                     Margin="0,0,12,0" VerticalAlignment="Center"/>
+          <StackPanel Grid.Column="3" Orientation="Horizontal">
+            <Button Content="Download" Tag="{Binding Voice}" Click="Download" Height="36"
+                    Visibility="{Binding Missing,Converter={StaticResource VisibleWhenTrue}}"/>
+            <Button Content="Use" Tag="{Binding Voice}" Click="SelectVoice" Height="36"
+                    Visibility="{Binding Installed,Converter={StaticResource VisibleWhenTrue}}"/>
+            <Button Content="Remove" Tag="{Binding Voice}" Click="Remove" Height="36"
+                    Margin="8,0,0,0" Visibility="{Binding Installed,Converter={StaticResource VisibleWhenTrue}}"
+                    IsEnabled="{Binding CanRemove}"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DataTemplate>
+  </Window.Resources>
+  <Grid Margin="24">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="16"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <StackPanel>
+      <TextBlock Text="Voices" FontSize="20" FontWeight="SemiBold"/>
+      <TextBlock Text="All voices run on your PC. Nothing is sent online."
+                 Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,4,0,0"/>
+    </StackPanel>
+    <Border Grid.Row="2" Style="{StaticResource Card}">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+          <TextBlock Text="Ryan · US English" Style="{StaticResource SectionTitle}" Margin="0,0,0,12"/>
+          <ItemsControl x:Name="RyanRows" ItemTemplate="{StaticResource VoiceItem}"/>
+          <TextBlock Text="Lessac · US English" Style="{StaticResource SectionTitle}" Margin="0,20,0,12"/>
+          <ItemsControl x:Name="LessacRows" ItemTemplate="{StaticResource VoiceItem}"/>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+    <Grid Grid.Row="3" Margin="0,16,0,0">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <StackPanel VerticalAlignment="Center">
+        <TextBlock x:Name="ProgressText" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap"/>
+        <ProgressBar x:Name="DownloadProgress" Height="4" Minimum="0" Maximum="100"
+                     Visibility="Collapsed" Margin="0,6,16,0"/>
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal">
+        <Button x:Name="CancelButton" Content="Cancel download" Click="CancelDownload" Visibility="Collapsed" Margin="0,0,8,0"/>
+        <Button Content="Close" Click="Close"/>
+      </StackPanel>
+    </Grid>
+  </Grid>
+</Window>

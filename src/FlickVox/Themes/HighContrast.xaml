@@ -1,0 +1,21 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <SolidColorBrush x:Key="Brush.Canvas" Color="{x:Static SystemColors.WindowColor}"/>
+  <SolidColorBrush x:Key="Brush.Surface" Color="{x:Static SystemColors.WindowColor}"/>
+  <SolidColorBrush x:Key="Brush.SurfaceRaised" Color="{x:Static SystemColors.WindowColor}"/>
+  <SolidColorBrush x:Key="Brush.SurfaceHover" Color="{x:Static SystemColors.HighlightColor}"/>
+  <SolidColorBrush x:Key="Brush.StrokeSubtle" Color="{x:Static SystemColors.WindowTextColor}"/>
+  <SolidColorBrush x:Key="Brush.StrokeControl" Color="{x:Static SystemColors.WindowTextColor}"/>
+  <SolidColorBrush x:Key="Brush.Text" Color="{x:Static SystemColors.WindowTextColor}"/>
+  <SolidColorBrush x:Key="Brush.TextSecondary" Color="{x:Static SystemColors.WindowTextColor}"/>
+  <SolidColorBrush x:Key="Brush.TextTertiary" Color="{x:Static SystemColors.WindowTextColor}"/>
+  <SolidColorBrush x:Key="Brush.Accent" Color="{x:Static SystemColors.HighlightColor}"/>
+  <SolidColorBrush x:Key="Brush.AccentHover" Color="{x:Static SystemColors.HighlightColor}"/>
+  <SolidColorBrush x:Key="Brush.AccentPressed" Color="{x:Static SystemColors.HighlightColor}"/>
+  <SolidColorBrush x:Key="Brush.AccentText" Color="{x:Static SystemColors.HighlightColor}"/>
+  <SolidColorBrush x:Key="Brush.AccentSubtle" Color="{x:Static SystemColors.HighlightColor}"/>
+  <SolidColorBrush x:Key="Brush.Signal" Color="{x:Static SystemColors.WindowTextColor}"/>
+  <SolidColorBrush x:Key="Brush.SignalSubtle" Color="{x:Static SystemColors.WindowColor}"/>
+  <SolidColorBrush x:Key="Brush.Danger" Color="{x:Static SystemColors.WindowTextColor}"/>
+  <SolidColorBrush x:Key="Brush.Warning" Color="{x:Static SystemColors.WindowTextColor}"/>
+  <SolidColorBrush x:Key="Brush.OverlayBg" Color="{x:Static SystemColors.WindowColor}"/>
+</ResourceDictionary>

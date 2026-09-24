@@ -8,6 +8,7 @@ using NAudio.Wave;
 using NotifyIcon = System.Windows.Forms.NotifyIcon;
 using ContextMenuStrip = System.Windows.Forms.ContextMenuStrip;
 using Brush = System.Windows.Media.Brush;
+using FontFamily = System.Windows.Media.FontFamily;
 
 namespace FlickVox;
 
@@ -33,6 +34,7 @@ public partial class MainWindow : Window
         Voice.SelectedItem = Services.VoiceManager.Voices.FirstOrDefault(v => v.Id == _settings.Current.VoiceId)
                              ?? Services.VoiceManager.Voices[0];
         Speed.Value = _settings.Current.Speed;
+        ApplyComposerTypography();
         HideAfter.IsChecked = _settings.Current.HideOverlayAfterSpeaking;
         Output.Items.Add("Default Windows output");
         for (var i = 0; i < WaveOut.DeviceCount; i++)
@@ -57,12 +59,14 @@ public partial class MainWindow : Window
 
     void CreateTray()
     {
-        _tray = new NotifyIcon { Text = "FlickVox", Icon = System.Drawing.SystemIcons.Application, Visible = true };
+        var trayPath = Path.Combine(AppContext.BaseDirectory, "Assets", "FlickVoxTray.ico");
+        _tray = new NotifyIcon { Text = "FlickVox", Icon = new System.Drawing.Icon(trayPath), Visible = true };
         var menu = new ContextMenuStrip();
         menu.Items.Add("Open FlickVox", null, (_, _) => { Show(); Activate(); });
         menu.Items.Add("Open compact overlay", null, (_, _) => ShowOverlay());
         menu.Items.Add("Stop speech", null, (_, _) => _speech.Stop());
         menu.Items.Add("Repeat last message", null, async (_, _) => await RepeatAsync());
+        menu.Items.Add("Settings", null, (_, _) => OpenSettings(this, new RoutedEventArgs()));
         menu.Items.Add("Exit", null, (_, _) => { _tray!.Visible = false; System.Windows.Application.Current.Shutdown(); });
         _tray.ContextMenuStrip = menu;
         _tray.DoubleClick += (_, _) => { Show(); Activate(); };
@@ -79,6 +83,8 @@ public partial class MainWindow : Window
             _ => "Error"
         };
         StatusDot.Fill = (Brush)FindResource(status is "Ready" or "Speaking" ? "Brush.Signal" : "Brush.AccentText");
+        if (status == "Speaking") ComposerCard.BorderBrush = (Brush)FindResource("Brush.Signal");
+        else ComposerCard.ClearValue(System.Windows.Controls.Border.BorderBrushProperty);
         if (status is "Ready" or "Stopped") SetBusy(false);
         else if (status is "Generating" or "Speaking") SetBusy(true);
     }
@@ -87,7 +93,7 @@ public partial class MainWindow : Window
     {
         _isBusy = busy;
         PrimaryLabel.Text = busy ? "Stop" : "Speak";
-        PrimaryIcon.Data = Geometry.Parse(busy ? "M 3,3 L 17,3 17,17 3,17 Z" : "M 4,2 L 16,10 4,18 Z");
+        PrimaryIcon.Data = (Geometry)FindResource(busy ? "Icon.Stop" : "Icon.Play");
     }
 
     void ShowNotice(string message, bool voiceAction)
@@ -97,6 +103,7 @@ public partial class MainWindow : Window
         Notice.Visibility = Visibility.Visible;
         StatusText.Text = voiceAction ? "Voice not ready" : "Error";
         StatusDot.Fill = (Brush)FindResource("Brush.TextTertiary");
+        ComposerCard.BorderBrush = (Brush)FindResource("Brush.Danger");
     }
 
     async void PrimaryAction(object sender, RoutedEventArgs e)
@@ -200,6 +207,9 @@ public partial class MainWindow : Window
         if (ReferenceEquals(opened, VoiceFlyout)) Voice.Focus();
         else if (ReferenceEquals(opened, OutputFlyout)) Output.Focus();
         else Speed.Focus();
+        VoiceChip.BorderBrush = (Brush)FindResource(VoiceFlyout.IsOpen ? "Brush.AccentText" : "Brush.StrokeControl");
+        OutputChip.BorderBrush = (Brush)FindResource(OutputFlyout.IsOpen ? "Brush.AccentText" : "Brush.StrokeControl");
+        SpeedChip.BorderBrush = (Brush)FindResource(SpeedFlyout.IsOpen ? "Brush.AccentText" : "Brush.StrokeControl");
     }
     void WindowPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
@@ -257,6 +267,31 @@ public partial class MainWindow : Window
     {
         VoiceFlyout.IsOpen = false;
         new VoiceManagerWindow(_voices) { Owner = this }.ShowDialog();
+        _settings.Load();
+        Voice.SelectedItem = Services.VoiceManager.Voices.FirstOrDefault(v => v.Id == _settings.Current.VoiceId);
+    }
+    void OpenSettings(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SettingsWindow(_settings, _voices) { Owner = this };
+        dialog.ShowDialog();
+        ApplyComposerTypography();
+        HideAfter.IsChecked = _settings.Current.HideOverlayAfterSpeaking;
+        Voice.SelectedItem = Services.VoiceManager.Voices.FirstOrDefault(v => v.Id == _settings.Current.VoiceId);
+        Speed.Value = _settings.Current.Speed;
+        Output.SelectedIndex = Math.Clamp(_settings.Current.OutputDevice + 1, 0, Output.Items.Count - 1);
+    }
+    void ApplyComposerTypography()
+    {
+        Input.FontSize = _settings.Current.ComposerFontSize;
+        InputPlaceholder.FontSize = Input.FontSize;
+        var font = _settings.Current.ComposerFont switch
+        {
+            "Atkinson Hyperlegible" => (FontFamily)FindResource("Font.Accessible"),
+            "System" => new FontFamily("Segoe UI Variable Text, Segoe UI"),
+            _ => (FontFamily)FindResource("Font.UI")
+        };
+        Input.FontFamily = font;
+        InputPlaceholder.FontFamily = font;
     }
     void OpenOverlay(object sender, RoutedEventArgs e) => ShowOverlay();
     void ShowOverlay() { _overlay ??= new OverlayWindow(this, _speech, _settings); _overlay.ShowAndFocus(); }
