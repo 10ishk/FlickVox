@@ -17,7 +17,7 @@ WPF was selected over WinUI 3 for version 0.1.0: it has a smaller, more direct d
 
 ## First-time setup
 
-Build and publish the app, then run `scripts\Install-FlickVox.ps1`. Install a compatible Piper Windows executable at `%LOCALAPPDATA%\FlickVox\runtime\piper\piper.exe`. Open **Voice manager** and download a supported model. This source repository does not redistribute Piper or model files pending release-specific license verification.
+Build and publish the app, then run `scripts\Install-FlickVox.ps1`. It installs the compatible archived Piper Windows runtime and downloads all six supported model/configuration pairs into `%LOCALAPPDATA%\FlickVox\runtime`. Use `-SkipVoices` to defer model downloads and install them later from Voice Manager. The installer never writes to a QuickSpeak location.
 
 ## Build
 

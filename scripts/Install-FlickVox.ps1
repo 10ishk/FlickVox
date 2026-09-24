@@ -1,13 +1,11 @@
 [CmdletBinding()]
 param([switch]$SkipVoices)
-$ErrorActionPreference='Stop'
-$root=Join-Path $env:LOCALAPPDATA 'Programs\FlickVox'
-$data=Join-Path $env:LOCALAPPDATA 'FlickVox'
-$source=Join-Path $PSScriptRoot '..\src\FlickVox\bin\Release\net10.0-windows\win-x64\publish'
-if (!(Test-Path $source)) { throw "Publish files not found. Run: dotnet publish src/FlickVox -c Release -r win-x64 --self-contained" }
-New-Item -ItemType Directory -Force -Path $root,$data | Out-Null
-Copy-Item "$source\*" $root -Recurse -Force
-$start=Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'; $shortcut=Join-Path $start 'FlickVox.lnk'
-$shell=New-Object -ComObject WScript.Shell; $link=$shell.CreateShortcut($shortcut);$link.TargetPath=Join-Path $root 'FlickVox.exe';$link.WorkingDirectory=$root;$link.Save()
-Write-Host "Installed FlickVox to $root."
-Write-Host "Install Piper in $data\runtime\piper and use Voice Manager to download voices."
+$ErrorActionPreference = 'Stop'
+$appRoot = Join-Path $env:LOCALAPPDATA 'Programs\FlickVox'; $dataRoot = Join-Path $env:LOCALAPPDATA 'FlickVox'; $runtimeRoot = Join-Path $dataRoot 'runtime'; $piperRoot = Join-Path $runtimeRoot 'piper'; $voiceRoot = Join-Path $runtimeRoot 'voices'; $publishRoot = Join-Path $PSScriptRoot '..\src\FlickVox\bin\Release\net10.0-windows\win-x64\publish'
+function Get-AtomicFile([string]$Url, [string]$Target) { $temporary = "$Target.download"; try { Invoke-WebRequest -Uri $Url -OutFile $temporary -UseBasicParsing; if ((Get-Item $temporary).Length -lt 1024) { throw "Downloaded file is unexpectedly small: $Url" }; Move-Item $temporary $Target -Force } finally { if (Test-Path $temporary) { Remove-Item -LiteralPath $temporary -Force } } }
+if (!(Test-Path $publishRoot)) { throw 'Publish files not found. Run the documented dotnet publish command first.' }
+New-Item -ItemType Directory -Force -Path $appRoot,$piperRoot,$voiceRoot | Out-Null; Copy-Item "$publishRoot\*" $appRoot -Recurse -Force
+$piperExe = Join-Path $piperRoot 'piper.exe'
+if (!(Test-Path $piperExe)) { $archive = Join-Path $runtimeRoot 'piper_windows_amd64.zip.download'; try { Write-Host 'Downloading Piper runtime...'; Invoke-WebRequest -Uri 'https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_windows_amd64.zip' -OutFile $archive -UseBasicParsing; Expand-Archive -LiteralPath $archive -DestinationPath $piperRoot -Force; $nested = Get-ChildItem $piperRoot -Recurse -Filter piper.exe | Select-Object -First 1; if (!$nested) { throw 'The Piper archive did not contain piper.exe.' }; if ($nested.FullName -ne $piperExe) { Move-Item $nested.FullName $piperExe -Force; Get-ChildItem $nested.DirectoryName | Move-Item -Destination $piperRoot -Force -ErrorAction SilentlyContinue } } finally { if (Test-Path $archive) { Remove-Item -LiteralPath $archive -Force } } }
+if (!$SkipVoices) { $voices = @('en_US-ryan-low','en_US-ryan-medium','en_US-ryan-high','en_US-lessac-low','en_US-lessac-medium','en_US-lessac-high'); foreach ($voice in $voices) { $parts = $voice.Split('-'); $base = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/$($parts[1])/$($parts[2])/$voice"; $model = Join-Path $voiceRoot "$voice.onnx"; $config = "$model.json"; if (!(Test-Path $model) -or !(Test-Path $config)) { Write-Host "Downloading $voice..."; Get-AtomicFile "$base.onnx?download=true" $model; Get-AtomicFile "$base.onnx.json?download=true" $config } } }
+$programs = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'; $shortcut = Join-Path $programs 'FlickVox.lnk'; $shell = New-Object -ComObject WScript.Shell; $link = $shell.CreateShortcut($shortcut); $link.TargetPath = Join-Path $appRoot 'FlickVox.exe'; $link.WorkingDirectory = $appRoot; $link.Save(); Write-Host "FlickVox installed at $appRoot."
