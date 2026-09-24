@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Reflection;
+using FlickVox.Models;
 using FlickVox.Services;
 
 var settings = new SettingsService();
@@ -102,3 +104,73 @@ await second.WaitAsync(TimeSpan.FromSeconds(20));
 Console.WriteLine($"Rapid recovery: firstCancelled={firstCancelled} secondReady={recoveryStates.Contains("Ready")}");
 CheckClean("Rapid recovery", baselineWavs, baselinePiper);
 if (!firstCancelled || !recoveryStates.Contains("Ready")) Environment.ExitCode = 1;
+
+baselineWavs = Wavs();
+baselinePiper = PiperIds();
+var repeatStates = new ConcurrentQueue<string>();
+await speech.RepeatAsync(repeatStates.Enqueue).WaitAsync(TimeSpan.FromSeconds(20));
+Console.WriteLine($"Cached Repeat: noGeneration={!repeatStates.Contains("Generating")} speaking={repeatStates.Contains("Speaking")} ready={repeatStates.Contains("Ready")}");
+CheckClean("Cached Repeat", baselineWavs, baselinePiper);
+if (repeatStates.Contains("Generating") || !repeatStates.Contains("Speaking") || !repeatStates.Contains("Ready")) Environment.ExitCode = 1;
+
+var isolatedRoot = Path.Combine(Path.GetTempPath(), $"FlickVox-smoke-{Guid.NewGuid():N}");
+Directory.CreateDirectory(isolatedRoot);
+try
+{
+    var isolatedSettings = new SettingsService();
+    typeof(SettingsService).GetField("_path", BindingFlags.Instance | BindingFlags.NonPublic)!
+        .SetValue(isolatedSettings, Path.Combine(isolatedRoot, "settings.json"));
+    typeof(SettingsService).GetProperty(nameof(SettingsService.Current))!
+        .SetValue(isolatedSettings, new AppSettings());
+    isolatedSettings.Current.VoiceId = "en_US-lessac-medium";
+    isolatedSettings.Current.Speed = 1.2;
+    isolatedSettings.Current.OutputDevice = -1;
+    isolatedSettings.Save();
+    isolatedSettings.Current.Speed = 0.7;
+    isolatedSettings.Load();
+    var settingsPass = isolatedSettings.Current.VoiceId == "en_US-lessac-medium" &&
+        isolatedSettings.Current.Speed == 1.2 && isolatedSettings.Current.OutputDevice == -1;
+    Console.WriteLine($"Isolated settings/voice/speed/output persistence: pass={settingsPass}");
+    if (!settingsPass) Environment.ExitCode = 1;
+
+    var history = new HistoryService(isolatedSettings);
+    history.Add(" first ");
+    history.Add("second");
+    history.Add("first");
+    var historyPass = history.Items.SequenceEqual(["first", "second"]);
+    Console.WriteLine($"Shared history ordering/deduplication: pass={historyPass}");
+    if (!historyPass) Environment.ExitCode = 1;
+
+    var phrases = new PhraseService();
+    typeof(PhraseService).GetField("_path", BindingFlags.Instance | BindingFlags.NonPublic)!
+        .SetValue(phrases, Path.Combine(isolatedRoot, "phrases.json"));
+    phrases.Items.Clear();
+    phrases.Add(" disposable ", " text one ");
+    var added = phrases.Items.Single();
+    phrases.Update(added, "renamed", "text two");
+    var edited = phrases.Items.Single();
+    var phrasePass = added.Name == "disposable" && edited.Name == "renamed" && edited.Text == "text two";
+    phrases.Delete(edited);
+    phrasePass &= phrases.Items.Count == 0 && File.ReadAllText(Path.Combine(isolatedRoot, "phrases.json")) == "[]";
+    Console.WriteLine($"Isolated phrase create/edit/delete: pass={phrasePass}");
+    if (!phrasePass) Environment.ExitCode = 1;
+
+    var selectedStates = new ConcurrentQueue<string>();
+    await new PiperSpeechService(new VoiceManager(), audio, isolatedSettings)
+        .SpeakAsync("Selected voice and speed smoke test.", selectedStates.Enqueue)
+        .WaitAsync(TimeSpan.FromSeconds(20));
+    var selectedPass = selectedStates.Contains("Generating") && selectedStates.Contains("Speaking") && selectedStates.Contains("Ready");
+    Console.WriteLine($"Selected voice/speed/default output: pass={selectedPass}");
+    if (!selectedPass) Environment.ExitCode = 1;
+
+    var sample = Path.Combine(isolatedRoot, "invalid-device.wav");
+    using (var writer = new NAudio.Wave.WaveFileWriter(sample, new NAudio.Wave.WaveFormat(22050, 1)))
+        writer.Write(new byte[22050 * 2], 0, 22050 * 2);
+    var invalidRejected = false;
+    try { await audio.PlayAsync(sample, 0.2f, 999, CancellationToken.None); }
+    catch (NAudio.MmException) { invalidRejected = true; }
+    using (var file = new FileStream(sample, FileMode.Open, FileAccess.Read, FileShare.None)) { }
+    Console.WriteLine($"Invalid device recovery/handle release: pass={invalidRejected}");
+    if (!invalidRejected) Environment.ExitCode = 1;
+}
+finally { Directory.Delete(isolatedRoot, recursive: true); }

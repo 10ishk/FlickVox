@@ -236,7 +236,9 @@ public partial class MainWindow : Window
         if (!_positionReady || !double.IsFinite(Left) || !double.IsFinite(Top)) return;
         _settings.Current.UnifiedLeft = Left;
         _settings.Current.UnifiedTop = Top;
-        _settings.Save();
+        try { _settings.Save(); }
+        catch (IOException ex) { System.Diagnostics.Trace.WriteLine($"Could not save FlickVox window position: {ex}"); }
+        catch (UnauthorizedAccessException ex) { System.Diagnostics.Trace.WriteLine($"Could not save FlickVox window position: {ex}"); }
     }
 
     bool DependenciesReady() =>
@@ -417,8 +419,7 @@ public partial class MainWindow : Window
     }
     void InputKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
-        if (e.Key == Key.Enter && !Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)) { e.Handled = true; _ = SpeakAsync(Input.Text); }
-        else if (e.Key is Key.Up or Key.Down && _history.Items.Count > 0 && !Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+        if (e.Key is Key.Up or Key.Down && _history.Items.Count > 0 && !Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
         {
             _historyCursor = Math.Clamp(_historyCursor + (e.Key == Key.Up ? 1 : -1), 0, _history.Items.Count - 1);
             Input.Text = _history.Items[_historyCursor];
@@ -429,6 +430,12 @@ public partial class MainWindow : Window
     void WindowPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        if (key == Key.Enter && Input.IsKeyboardFocusWithin && !Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+        {
+            e.Handled = true;
+            _ = SpeakAsync(Input.Text);
+            return;
+        }
         if (Keyboard.Modifiers.HasFlag(ModifierKeys.Alt))
         {
             var digit = key is >= Key.D1 and <= Key.D9 ? (int)key - (int)Key.D1 + 1
