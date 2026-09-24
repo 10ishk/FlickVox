@@ -23,9 +23,13 @@
           <Grid>
             <StackPanel x:Name="GeneralPanel">
               <TextBlock Text="General" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,16"/>
-              <CheckBox x:Name="HideAfter" Style="{StaticResource ToggleSwitch}" Content="Hide the overlay after submitting speech"
+              <CheckBox x:Name="HideAfter" Style="{StaticResource ToggleSwitch}" Content="Hide overlay after successful playback"
                         Checked="HideAfterChanged" Unchecked="HideAfterChanged"/>
-              <TextBlock Text="When off, the overlay stays available for another message."
+              <TextBlock Text="On errors or cancellation, your draft stays in the overlay. When off, the overlay stays open."
+                         Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+              <CheckBox x:Name="PersistHistory" Content="Keep recent messages between sessions"
+                        Checked="PersistHistoryChanged" Unchecked="PersistHistoryChanged" Margin="0,20,0,0"/>
+              <TextBlock Text="Off by default. Existing messages stay in memory until you exit."
                          Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,4,0,0"/>
             </StackPanel>
             <StackPanel x:Name="AudioPanel" Visibility="Collapsed">
@@ -44,6 +48,8 @@
               <TextBlock Text="Volume" Style="{StaticResource FieldLabel}"/>
               <Slider x:Name="Volume" Minimum="0" Maximum="1" ValueChanged="VolumeChanged" Margin="0,8,0,4"/>
               <TextBlock x:Name="VolumeValue" HorizontalAlignment="Right" Foreground="{DynamicResource Brush.AccentText}"/>
+              <TextBlock Text="For Discord or games, route this output through a virtual audio device (such as Wave Link) and select that device as the microphone in the other app."
+                         Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,14,0,0"/>
             </StackPanel>
             <StackPanel x:Name="OverlayPanel" Visibility="Collapsed">
               <TextBlock Text="Overlay" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,16"/>
@@ -54,8 +60,14 @@
                       ValueChanged="OverlayWidthChanged" Margin="0,8,0,4"/>
               <TextBlock x:Name="OverlayWidthValue" HorizontalAlignment="Right" Foreground="{DynamicResource Brush.AccentText}"/>
               <Button Content="Reset overlay position" Click="ResetOverlayPosition" HorizontalAlignment="Left" Margin="0,16,0,0"/>
-              <TextBlock Text="The global shortcut is Ctrl + Alt + T."
-                         Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,16,0,0"/>
+              <TextBlock Text="Global overlay shortcut" Style="{StaticResource FieldLabel}" Margin="0,16,0,0"/>
+              <ComboBox x:Name="Hotkey" IsEditable="True" SelectionChanged="HotkeyChanged" LostFocus="HotkeyLostFocus" Margin="0,6,0,0"
+                        AutomationProperties.Name="Global overlay shortcut">
+                <ComboBoxItem Content="Ctrl+Alt+T"/><ComboBoxItem Content="Ctrl+Alt+V"/><ComboBoxItem Content="Ctrl+Shift+T"/>
+              </ComboBox>
+              <TextBlock x:Name="HotkeyError" Foreground="{DynamicResource Brush.Danger}" TextWrapping="Wrap" Margin="0,5,0,0" Visibility="Collapsed"/>
+              <TextBlock Text="Use Ctrl or Alt plus a letter or F1–F12. If unavailable, the previous shortcut remains active."
+                         Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,5,0,0"/>
             </StackPanel>
             <StackPanel x:Name="AppearancePanel" Visibility="Collapsed">
               <TextBlock Text="Appearance" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,16"/>

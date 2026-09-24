@@ -8,12 +8,16 @@ namespace FlickVox;
 public partial class SettingsWindow : Window
 {
     readonly SettingsService _settings;
+    readonly HotkeyService _hotkey;
+    readonly HistoryService? _history;
     bool _ready;
 
-    public SettingsWindow(SettingsService settings, VoiceManager voices)
+    public SettingsWindow(SettingsService settings, VoiceManager voices, HotkeyService hotkey, HistoryService? history = null)
     {
         InitializeComponent();
         _settings = settings;
+        _hotkey = hotkey;
+        _history = history;
         SourceInitialized += (_, _) => WindowBackdrop.ApplyDarkTitleBar(this);
         Voice.ItemsSource = VoiceManager.Voices;
         Voice.SelectedItem = VoiceManager.Voices.FirstOrDefault(v => v.Id == settings.Current.VoiceId);
@@ -23,6 +27,8 @@ public partial class SettingsWindow : Window
         Speed.Value = settings.Current.Speed;
         Volume.Value = settings.Current.Volume;
         HideAfter.IsChecked = settings.Current.HideOverlayAfterSpeaking;
+        PersistHistory.IsChecked = settings.Current.PersistHistory;
+        Hotkey.Text = hotkey.Current;
         AlwaysOnTop.IsChecked = settings.Current.AlwaysOnTop;
         OverlayWidth.Value = Math.Clamp(settings.Current.OverlayWidth, OverlayWidth.Minimum, OverlayWidth.Maximum);
         ComposerSize.Value = settings.Current.ComposerFontSize;
@@ -73,6 +79,33 @@ public partial class SettingsWindow : Window
         Save(s => s.Volume = (float)Volume.Value);
     }
     void HideAfterChanged(object sender, RoutedEventArgs e) => Save(s => s.HideOverlayAfterSpeaking = HideAfter.IsChecked == true);
+    void PersistHistoryChanged(object sender, RoutedEventArgs e)
+    {
+        Save(s => s.PersistHistory = PersistHistory.IsChecked == true);
+        _history?.SaveIfEnabled();
+    }
+    void HotkeyChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_ready && Hotkey.SelectedItem is ComboBoxItem item) ApplyHotkey(item.Content?.ToString() ?? "");
+    }
+    void HotkeyLostFocus(object sender, RoutedEventArgs e)
+    {
+        if (_ready) ApplyHotkey(Hotkey.Text);
+    }
+    void ApplyHotkey(string value)
+    {
+        if (_hotkey.TryChange(value))
+        {
+            Save(s => s.Hotkey = value);
+            HotkeyError.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            HotkeyError.Text = $"Cannot use {value}. It may be invalid or already registered. {_hotkey.Current} remains active.";
+            HotkeyError.Visibility = Visibility.Visible;
+            Hotkey.Text = _hotkey.Current;
+        }
+    }
     void AlwaysOnTopChanged(object sender, RoutedEventArgs e) => Save(s => s.AlwaysOnTop = AlwaysOnTop.IsChecked == true);
     void OverlayWidthChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {

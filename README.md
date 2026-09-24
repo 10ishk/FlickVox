@@ -8,16 +8,17 @@ WPF was selected over WinUI 3 for version 0.1.0: it has a smaller, more direct d
 
 ## Features
 
-- Main text-to-speech window with speed, output device, repeat, recent messages, and saved phrases.
-- Compact draggable overlay, summoned with `Ctrl+Alt+T`; Enter speaks, Shift+Enter inserts a line, and Esc hides/stops.
+- Compact composer-first main window with voice/output/speed flyouts, cached repeat, shared recent messages, and editable saved phrases.
+- Compact draggable overlay, summoned with `Ctrl+Alt+T`; Enter speaks, Shift+Enter inserts a line, and Esc hides/stops. Expand the same overlay for voice/output and one-click phrases.
 - Piper subprocess integration with cancellation and temporary WAV cleanup.
 - Six supported Piper voices: Ryan Low/Medium/High and Lessac Low/Medium/High.
 - Voice manager that downloads model and JSON pairs atomically; settings and phrases stored under `%LOCALAPPDATA%\FlickVox`.
+- In-app setup guidance can obtain the official Piper runtime when it is missing. Existing valid models are reused.
 - NAudio device playback, system tray commands, single-instance protection, and user-level install/uninstall scripts.
 
 ## First-time setup
 
-Build and publish the app, then run `scripts\Install-FlickVox.ps1`. It installs the compatible archived Piper Windows runtime and downloads all six supported model/configuration pairs into `%LOCALAPPDATA%\FlickVox\runtime`. Use `-SkipVoices` to defer model downloads and install them later from Voice Manager. The installer never writes to a QuickSpeak location.
+For a normal installation, build and publish the app, then run `scripts\Install-FlickVox.ps1`. It installs the compatible archived Piper Windows runtime and downloads all six supported model/configuration pairs into `%LOCALAPPDATA%\FlickVox\runtime`. Use `-SkipVoices` to defer model downloads and install them later from Voice Manager. Alternatively, the development app guides you through missing Piper/voice setup without installing FlickVox. The installer never writes to a QuickSpeak location.
 
 ## Build
 
@@ -32,7 +33,7 @@ Run `scripts\Install-FlickVox.ps1` from the repository root after publishing. `s
 
 ## Audio routing
 
-Select **Default Windows output** or a listed output device. Apps such as Elgato Wave Link work when configured as a normal Windows output route; FlickVox does not install drivers, request elevation, or change system audio defaults.
+Select **Default Windows output** or a listed output device. To send speech into Discord or a game as microphone input, route FlickVox through a virtual audio device such as Wave Link and select that virtual input in the other app. Merely selecting speakers does not transmit audio as a microphone. FlickVox does not install drivers, request elevation, or change system audio defaults.
 
 ## Screenshots
 

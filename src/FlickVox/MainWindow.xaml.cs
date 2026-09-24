@@ -1,4 +1,3 @@
-using System.Text.Json;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using FlickVox.Infrastructure;
@@ -9,6 +8,8 @@ using NotifyIcon = System.Windows.Forms.NotifyIcon;
 using ContextMenuStrip = System.Windows.Forms.ContextMenuStrip;
 using Brush = System.Windows.Media.Brush;
 using FontFamily = System.Windows.Media.FontFamily;
+using Button = System.Windows.Controls.Button;
+using MessageBox = System.Windows.MessageBox;
 
 namespace FlickVox;
 
@@ -19,8 +20,8 @@ public partial class MainWindow : Window
     readonly AudioPlaybackService _audio = new();
     readonly PiperSpeechService _speech;
     readonly HotkeyService _hotkey = new();
-    readonly List<string> _history = new();
-    readonly List<SavedPhrase> _phrases = new();
+    readonly HistoryService _history;
+    readonly PhraseService _phrases = new();
     OverlayWindow? _overlay;
     NotifyIcon? _tray;
     bool _isBusy;
@@ -32,30 +33,35 @@ public partial class MainWindow : Window
         InitializeComponent();
         SourceInitialized += (_, _) => WindowBackdrop.ApplyDarkTitleBar(this);
         _speech = new PiperSpeechService(_voices, _audio, _settings);
+        _speech.LastMessageChanged += () => Dispatcher.Invoke(() => RepeatButton.IsEnabled = true);
+        _history = new HistoryService(_settings);
         Voice.ItemsSource = Services.VoiceManager.Voices;
         Voice.SelectedItem = Services.VoiceManager.Voices.FirstOrDefault(v => v.Id == _settings.Current.VoiceId)
                              ?? Services.VoiceManager.Voices[0];
         Speed.Value = _settings.Current.Speed;
         ApplyComposerTypography();
-        HideAfter.IsChecked = _settings.Current.HideOverlayAfterSpeaking;
         Output.Items.Add("Default Windows output");
         for (var i = 0; i < WaveOut.DeviceCount; i++)
             Output.Items.Add(WaveOut.GetCapabilities(i).ProductName);
         Output.SelectedIndex = Math.Clamp(_settings.Current.OutputDevice + 1, 0, Output.Items.Count - 1);
-        LoadPhrases();
-        RefreshPhrases();
+        Phrases.ItemsSource = _phrases.Items;
+        History.ItemsSource = _history.Items;
+        _phrases.Items.CollectionChanged += (_, _) => RefreshEmptyStates();
+        _history.Items.CollectionChanged += (_, _) => RefreshEmptyStates();
+        RefreshEmptyStates();
         UpdateComposerActions();
-        SetActiveTab(true);
-        ApplyResponsiveLayout();
+        SetActiveTab(_settings.Current.ShowSavedPhrases);
+        UpdatePhrasePanel();
         Loaded += OnLoaded;
         Closing += OnClosing;
     }
 
     void OnLoaded(object sender, RoutedEventArgs e)
     {
-        try { _hotkey.Register(this); _hotkey.Pressed += (_, _) => ShowOverlay(); }
+        try { _hotkey.Register(this, _settings.Current.Hotkey); _hotkey.Pressed += (_, _) => ShowOverlay(); }
         catch (Exception ex) { ShowNotice(ex.Message, false); }
         CreateTray();
+        CheckReadiness();
         Input.Focus();
     }
 
@@ -85,11 +91,12 @@ public partial class MainWindow : Window
         {
             "Generating" => "Preparing",
             "Speaking" => "Speaking",
-            "Ready" => "Ready",
-            "Stopped" => "Ready",
+            "Ready" => DependenciesReady() ? "Ready" : "Voice not ready",
+            "Stopped" => DependenciesReady() ? "Ready" : "Voice not ready",
             _ => "Error"
         };
-        StatusDot.Fill = (Brush)FindResource(status is "Ready" or "Speaking" ? "Brush.Signal" : "Brush.AccentText");
+        StatusDot.Fill = (Brush)FindResource(status == "Speaking" || ((status is "Ready" or "Stopped") && DependenciesReady())
+            ? "Brush.Signal" : "Brush.AccentText");
         if (status == "Speaking") ComposerCard.BorderBrush = (Brush)FindResource("Brush.Signal");
         else ComposerCard.ClearValue(System.Windows.Controls.Border.BorderBrushProperty);
         if (status is "Ready" or "Stopped") SetBusy(false);
@@ -113,6 +120,27 @@ public partial class MainWindow : Window
         ComposerCard.BorderBrush = (Brush)FindResource("Brush.Danger");
     }
 
+    bool DependenciesReady() =>
+        File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FlickVox", "runtime", "piper", "piper.exe"))
+        && _voices.IsInstalled(_settings.Current.VoiceId);
+
+    void CheckReadiness()
+    {
+        if (DependenciesReady())
+        {
+            SetStatus("Ready");
+            if (!_settings.Current.FirstSpeechConfirmed && !_settings.Current.FirstRunGuidanceDismissed)
+            {
+                NoticeText.Text = "Ready for a first test. Confirm audible output in Setup; voice-chat routing needs a virtual audio device.";
+                NoticeAction.Visibility = Visibility.Visible;
+                Notice.Visibility = Visibility.Visible;
+            }
+            else Notice.Visibility = Visibility.Collapsed;
+            return;
+        }
+        ShowNotice("Speech setup is incomplete. Install Piper or download the selected voice, then try a test message.", true);
+    }
+
     async void PrimaryAction(object sender, RoutedEventArgs e)
     {
         if (_isBusy) { StopSpeech(); return; }
@@ -131,18 +159,36 @@ public partial class MainWindow : Window
         if (string.IsNullOrWhiteSpace(text)) return;
         var version = ++_speechVersion;
         Notice.Visibility = Visibility.Collapsed;
-        AddHistory(text);
+        _history.Add(text);
         SetBusy(true);
         SetStatus("Generating");
         try { await _speech.SpeakAsync(text, s => Dispatcher.Invoke(() => { if (version == _speechVersion) SetStatus(s); })); }
         catch (OperationCanceledException) { if (version == _speechVersion) SetStatus("Ready"); }
         catch (Exception ex) { if (version == _speechVersion) ShowNotice(ex.Message, ex.Message.Contains("voice", StringComparison.OrdinalIgnoreCase)); }
-        finally { if (version == _speechVersion) { SetBusy(false); if (StatusText.Text is "Preparing" or "Speaking") SetStatus("Ready"); } }
+        finally { if (version == _speechVersion) { SetBusy(false); RepeatButton.IsEnabled = _speech.LastText is not null; if (StatusText.Text is "Preparing" or "Speaking") SetStatus("Ready"); } }
     }
 
     async void Repeat(object sender, RoutedEventArgs e) => await RepeatAsync();
-    async Task RepeatAsync() { if (_speech.LastText is not null) await SpeakAsync(_speech.LastText); }
-    async void Preview(object sender, RoutedEventArgs e) => await SpeakAsync("Hello, this is the selected FlickVox voice.");
+    async Task RepeatAsync()
+    {
+        if (_speech.LastText is null) return;
+        var version = ++_speechVersion;
+        SetBusy(true);
+        try { await _speech.RepeatAsync(s => Dispatcher.Invoke(() => { if (version == _speechVersion) SetStatus(s); })); }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { ShowNotice(ex.Message, false); }
+        finally { if (version == _speechVersion) { SetBusy(false); if (StatusText.Text is "Preparing" or "Speaking") SetStatus("Ready"); } }
+    }
+    async void Preview(object sender, RoutedEventArgs e)
+    {
+        var version = ++_speechVersion;
+        VoiceFlyout.IsOpen = false;
+        SetBusy(true);
+        try { await _speech.PreviewAsync("Hello, this is the selected FlickVox voice.", s => Dispatcher.Invoke(() => { if (version == _speechVersion) SetStatus(s); })); }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { ShowNotice(ex.Message, false); }
+        finally { if (version == _speechVersion) { SetBusy(false); if (StatusText.Text is "Preparing" or "Speaking") SetStatus("Ready"); } }
+    }
 
     void InputChanged(object sender, TextChangedEventArgs e)
     {
@@ -166,24 +212,10 @@ public partial class MainWindow : Window
         else if (e.Key == Key.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) { e.Handled = true; _ = RepeatAsync(); }
     }
 
-    void AddHistory(string text)
-    {
-        _history.Remove(text);
-        _history.Insert(0, text);
-        if (_history.Count > 30) _history.RemoveAt(30);
-        History.ItemsSource = null;
-        History.ItemsSource = _history;
-        RecentEmpty.Visibility = Visibility.Collapsed;
-        RepeatButton.IsEnabled = true;
-    }
-    void HistorySpeak(object sender, MouseButtonEventArgs e)
-    {
-        if (History.SelectedItem is string text) { Input.Text = text; _ = SpeakAsync(text); }
-    }
-    void PhraseSpeak(object sender, MouseButtonEventArgs e)
-    {
-        if (Phrases.SelectedItem is SavedPhrase phrase) { Input.Text = phrase.Text; _ = SpeakAsync(phrase.Text); }
-    }
+    void PlayHistory(object sender, RoutedEventArgs e)
+    { if (sender is Button { Tag: string text }) { Input.Text = text; _ = SpeakAsync(text); } }
+    void PlayPhrase(object sender, RoutedEventArgs e)
+    { if (sender is Button { Tag: SavedPhrase phrase }) { Input.Text = phrase.Text; _ = SpeakAsync(phrase.Text); } }
 
     void SpeedChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
@@ -200,6 +232,7 @@ public partial class MainWindow : Window
         VoiceValue.Text = voice.ToString();
         _settings.Save();
         VoiceFlyout.IsOpen = false;
+        if (IsLoaded) CheckReadiness();
     }
     void OutputChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -238,23 +271,30 @@ public partial class MainWindow : Window
     {
         if (string.IsNullOrWhiteSpace(Input.Text)) return;
         var text = Input.Text.Trim();
-        _phrases.Add(new SavedPhrase(Guid.NewGuid(), text.Length > 32 ? text[..32] + "…" : text, text));
-        SavePhrases();
-        RefreshPhrases();
+        var title = text.Length > 32 ? text[..32] + "…" : text;
+        var editor = new PhraseEditorWindow(title, text) { Owner = this };
+        if (editor.ShowDialog() != true) return;
+        _phrases.Add(editor.PhraseTitle, editor.PhraseBody);
         SetActiveTab(true);
+        _settings.Current.PhrasePanelExpanded = true;
+        UpdatePhrasePanel();
     }
-    string PhrasesPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FlickVox", "phrases.json");
-    void LoadPhrases()
+    void EditPhrase(object sender, RoutedEventArgs e)
     {
-        try { if (File.Exists(PhrasesPath)) _phrases.AddRange(JsonSerializer.Deserialize<List<SavedPhrase>>(File.ReadAllText(PhrasesPath)) ?? []); }
-        catch { /* Existing file is preserved for recovery. */ }
+        if (sender is not Button { Tag: SavedPhrase phrase }) return;
+        var editor = new PhraseEditorWindow(phrase.Name, phrase.Text) { Owner = this };
+        if (editor.ShowDialog() == true) _phrases.Update(phrase, editor.PhraseTitle, editor.PhraseBody);
     }
-    void SavePhrases() => File.WriteAllText(PhrasesPath, JsonSerializer.Serialize(_phrases));
-    void RefreshPhrases()
+    void DeletePhrase(object sender, RoutedEventArgs e)
     {
-        Phrases.ItemsSource = null;
-        Phrases.ItemsSource = _phrases;
-        SavedEmpty.Visibility = _phrases.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (sender is not Button { Tag: SavedPhrase phrase }) return;
+        if (MessageBox.Show(this, $"Delete the saved phrase \"{phrase.Name}\"?", "Delete phrase",
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes) _phrases.Delete(phrase);
+    }
+    void RefreshEmptyStates()
+    {
+        SavedEmpty.Visibility = _phrases.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        RecentEmpty.Visibility = _history.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
     void ShowSaved(object sender, RoutedEventArgs e) => SetActiveTab(true);
     void ShowRecent(object sender, RoutedEventArgs e) => SetActiveTab(false);
@@ -264,18 +304,19 @@ public partial class MainWindow : Window
         RecentPanel.Visibility = saved ? Visibility.Collapsed : Visibility.Visible;
         SavedTab.Background = (Brush)FindResource(saved ? "Brush.Accent" : "Brush.SurfaceRaised");
         RecentTab.Background = (Brush)FindResource(saved ? "Brush.SurfaceRaised" : "Brush.Accent");
+        _settings.Current.ShowSavedPhrases = saved;
+        _settings.Save();
     }
-
-    void WindowSizeChanged(object sender, SizeChangedEventArgs e) => ApplyResponsiveLayout();
-    void ApplyResponsiveLayout()
+    void TogglePhrasePanel(object sender, RoutedEventArgs e)
     {
-        if (Workspace is null) return;
-        var narrow = ActualWidth < 880;
-        Workspace.ColumnDefinitions[2].Width = narrow ? new GridLength(0) : new GridLength(320);
-        Grid.SetColumn(Rail, narrow ? 0 : 2);
-        Grid.SetRow(Rail, narrow ? 1 : 0);
-        Rail.Margin = narrow ? new Thickness(0, 16, 0, 0) : new Thickness();
-        HotkeyHint.Visibility = ActualWidth < 720 ? Visibility.Collapsed : Visibility.Visible;
+        _settings.Current.PhrasePanelExpanded = !_settings.Current.PhrasePanelExpanded;
+        _settings.Save();
+        UpdatePhrasePanel();
+    }
+    void UpdatePhrasePanel()
+    {
+        PhraseContent.Visibility = _settings.Current.PhrasePanelExpanded ? Visibility.Visible : Visibility.Collapsed;
+        ExpandButton.Content = _settings.Current.PhrasePanelExpanded ? "Collapse ▴" : "Expand ▾";
     }
 
     void OpenVoiceManager(object sender, RoutedEventArgs e)
@@ -284,16 +325,24 @@ public partial class MainWindow : Window
         new VoiceManagerWindow(_voices) { Owner = this }.ShowDialog();
         _settings.Load();
         Voice.SelectedItem = Services.VoiceManager.Voices.FirstOrDefault(v => v.Id == _settings.Current.VoiceId);
+        CheckReadiness();
+    }
+    void OpenSetup(object sender, RoutedEventArgs e)
+    {
+        new SetupWindow(_voices, _settings, _hotkey, _history, _speech) { Owner = this }.ShowDialog();
+        _settings.Load();
+        Voice.SelectedItem = Services.VoiceManager.Voices.FirstOrDefault(v => v.Id == _settings.Current.VoiceId);
+        CheckReadiness();
     }
     void OpenSettings(object sender, RoutedEventArgs e)
     {
-        var dialog = new SettingsWindow(_settings, _voices) { Owner = this };
+        var dialog = new SettingsWindow(_settings, _voices, _hotkey, _history) { Owner = this };
         dialog.ShowDialog();
         ApplyComposerTypography();
-        HideAfter.IsChecked = _settings.Current.HideOverlayAfterSpeaking;
         Voice.SelectedItem = Services.VoiceManager.Voices.FirstOrDefault(v => v.Id == _settings.Current.VoiceId);
         Speed.Value = _settings.Current.Speed;
         Output.SelectedIndex = Math.Clamp(_settings.Current.OutputDevice + 1, 0, Output.Items.Count - 1);
+        CheckReadiness();
     }
     void ApplyComposerTypography()
     {
@@ -309,12 +358,11 @@ public partial class MainWindow : Window
         InputPlaceholder.FontFamily = font;
     }
     void OpenOverlay(object sender, RoutedEventArgs e) => ShowOverlay();
-    void ShowOverlay() { _overlay ??= new OverlayWindow(this, _speech, _settings); _overlay.ShowAndFocus(); }
+    void ShowOverlay() { _overlay ??= new OverlayWindow(this, _speech, _settings, _history, _phrases); _overlay.ShowAndFocus(); }
     void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         if (!_exitRequested) { e.Cancel = true; Hide(); }
         _settings.Current.OutputDevice = Output.SelectedIndex - 1;
-        _settings.Current.HideOverlayAfterSpeaking = HideAfter.IsChecked == true;
         _settings.Save();
     }
     protected override void OnClosed(EventArgs e) { _speech.Stop(); _tray?.Dispose(); _hotkey.Dispose(); _audio.Dispose(); base.OnClosed(e); }

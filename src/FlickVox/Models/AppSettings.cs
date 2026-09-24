@@ -9,8 +9,13 @@ public sealed class AppSettings
     public string Hotkey { get; set; } = "Ctrl+Alt+T";
     public double OverlayLeft { get; set; } = double.NaN;
     public double OverlayTop { get; set; } = double.NaN;
-    public double OverlayWidth { get; set; } = 640;
-    public double OverlayHeight { get; set; } = 80;
+    public double OverlayWidth { get; set; } = 520;
+    public double OverlayHeight { get; set; } = 72;
+    public bool PhrasePanelExpanded { get; set; } = true;
+    public bool ShowSavedPhrases { get; set; } = true;
+    public bool OverlayExpanded { get; set; }
+    public bool FirstSpeechConfirmed { get; set; }
+    public bool FirstRunGuidanceDismissed { get; set; }
     public bool HideOverlayAfterSpeaking { get; set; } = true;
     public bool AlwaysOnTop { get; set; } = true;
     public bool PersistHistory { get; set; }

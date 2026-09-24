@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1250" height="754" viewBox="0 0 1250 754" role="img" aria-label="Concept layout for compact FlickVox main window, quick overlay and expanded overlay">
+<defs>
+ <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#6576FF"/><stop offset="1" stop-color="#36C9AC"/></linearGradient>
+ <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="16" stdDeviation="23" flood-color="#000" flood-opacity="0.35"/></filter>
+ <style>text{font-family:Inter, 'Segoe UI', Arial, sans-serif} .kicker{font-size:13px;letter-spacing:1.5px;font-weight:700;fill:#8592A6} .title{font-size:21px;font-weight:750;fill:#EAF0F9} .reg{font-size:14px;fill:#EAF0F9} .muted{font-size:12px;fill:#96A4B7} .btn{font-size:14px;font-weight:700;fill:white}</style>
+</defs>
+<rect width="1250" height="754" fill="#0B0E14"/>
+<text x="54" y="53" fill="#ECF0F7" font-size="26" font-weight="750">FlickVox / compact-first concept</text>
+<text x="54" y="77" fill="#8C9BAF" font-size="13">Reduce the footprint. Keep the composer central. Put repeat and saved phrases one action away.</text>
+<text x="54" y="116" class="kicker">01 / COMPACT MAIN  ·  520 × 500</text>
+<text x="645" y="116" class="kicker">02 / QUICK OVERLAY  ·  520 × 72</text>
+<!-- main window -->
+<rect x="54" y="133" width="520" height="500" rx="16" fill="#141922" stroke="#384153" filter="url(#shadow)"/>
+<!-- header -->
+<rect x="75" y="153" width="28" height="28" rx="8" fill="url(#brand)"/>
+<rect x="84" y="162" width="3.5" height="10" rx="1.5" fill="white"/>
+<rect x="90" y="158" width="3.5" height="18" rx="1.5" fill="white"/>
+<rect x="96" y="164" width="3.5" height="7" rx="1.5" fill="white"/>
+<text x="114" y="175" class="title" font-size="18">FlickVox</text>
+<circle cx="380" cy="169" r="4" fill="#45D7B0"/>
+<text x="391" y="174" class="muted" fill="#C7D2E3">Ready</text>
+<rect x="457" y="153" width="96" height="31" rx="8" fill="#252C38" stroke="#49546B"/>
+<text x="466" y="174" font-size="12" font-weight="650" fill="#DAE3F0">↗ Overlay</text>
+<line x1="74" y1="196" x2="554" y2="196" stroke="#292F3C"/>
+<!-- composer -->
+<rect x="74" y="211" width="480" height="157" rx="13" fill="#1A202A" stroke="#46516A"/>
+<text x="94" y="247" fill="#9EAABF" font-size="21">Type something to say...</text>
+<text x="94" y="346" class="muted">Enter to speak</text><circle cx="196" cy="341" r="2" fill="#647185"/><text x="208" y="346" class="muted">Shift + Enter for new line</text>
+<!-- settings chips -->
+<rect x="74" y="382" width="191" height="39" rx="9" fill="#202733" stroke="#4A556C"/>
+<text x="88" y="407" class="reg" font-size="13">Ryan · Medium</text><path d="m247 399 5 5 5-5" fill="none" stroke="#A7B3C8" stroke-width="1.5"/>
+<rect x="273" y="382" width="163" height="39" rx="9" fill="#202733" stroke="#4A556C"/>
+<text x="287" y="407" class="reg" font-size="13">Default output</text><path d="m418 399 5 5 5-5" fill="none" stroke="#A7B3C8" stroke-width="1.5"/>
+<rect x="444" y="382" width="110" height="39" rx="9" fill="#202733" stroke="#4A556C"/>
+<text x="460" y="407" class="reg" font-size="13">1.0×</text><path d="m533 399 5 5 5-5" fill="none" stroke="#A7B3C8" stroke-width="1.5"/>
+<!-- action row -->
+<rect x="74" y="436" width="154" height="44" rx="10" fill="#222A37" stroke="#45516A"/>
+<path d="M91 452 C99 444 112 449 112 458 m0 0 -2-5 m2 5 5-2 M116 462 C107 470 95 466 95 459 m0 0 2 5 m-2-5 -5 2" stroke="#AAB7CF" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="130" y="462" class="reg" font-weight="600">Repeat</text>
+<rect x="378" y="436" width="176" height="44" rx="10" fill="#4F46E5"/>
+<path d="m398 447 v20 l16-10 z" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+<text x="430" y="463" class="btn">Speak</text><text x="509" y="463" font-size="11" font-weight="600" fill="#DED9FF">↵</text>
+<!-- phrase section -->
+<line x1="74" y1="498" x2="554" y2="498" stroke="#2D3444"/>
+<rect x="74" y="510" width="89" height="31" rx="8" fill="#33327C"/>
+<text x="93" y="530" font-size="13" font-weight="700" fill="#F3F1FF">Saved</text>
+<text x="179" y="530" font-size="13" font-weight="600" fill="#929FB6">Recent</text>
+<text x="476" y="530" font-size="12" fill="#A8B2FA">Manage ↗</text>
+<!-- rows -->
+<rect x="74" y="551" width="480" height="31" rx="7" fill="#1F2632"/>
+<text x="90" y="572" font-size="13" fill="#E4EAF4">Be right back...</text>
+<text x="522" y="572" font-size="13" fill="#B6C5E4">▶</text>
+<rect x="74" y="587" width="480" height="31" rx="7" fill="#1A202A"/>
+<text x="90" y="608" font-size="13" fill="#E4EAF4">One moment, please...</text>
+<text x="522" y="608" font-size="13" fill="#B6C5E4">▶</text>
+<!-- right overlay -->
+<rect x="645" y="133" width="520" height="72" rx="17" fill="#191F2A" stroke="#526077" filter="url(#shadow)"/>
+<g opacity="0.8" fill="#8C9BAF"><circle cx="665" cy="166" r="1.7"/><circle cx="672" cy="166" r="1.7"/><circle cx="665" cy="173" r="1.7"/><circle cx="672" cy="173" r="1.7"/></g>
+<text x="691" y="175" fill="#96A4BA" font-size="18">Type to speak...</text>
+<circle cx="1122" cy="170" r="4" fill="#45D7B0"/>
+<text x="1133" y="175" fill="#BED1D2" font-size="12">Ready</text>
+<text x="645" y="234" fill="#8E9BAD" font-size="13">One hotkey. Cursor focused. Enter speaks. Esc dismisses.</text>
+<text x="645" y="293" class="kicker">03 / EXPANDED OVERLAY  ·  OPTIONAL DRAWER</text>
+<!-- expanded overlay -->
+<rect x="645" y="308" width="520" height="325" rx="17" fill="#171D28" stroke="#4A566C" filter="url(#shadow)"/>
+<g opacity="0.8" fill="#8C9BAF"><circle cx="666" cy="340" r="1.7"/><circle cx="673" cy="340" r="1.7"/><circle cx="666" cy="347" r="1.7"/><circle cx="673" cy="347" r="1.7"/></g>
+<text x="691" y="350" font-size="18" font-weight="700" fill="#E7EDF7">FlickVox</text>
+<text x="1052" y="349" font-size="12" fill="#98A6BA">Ctrl Alt T</text>
+<text x="1136" y="347" font-size="16" fill="#98A6BA">⌃</text>
+<rect x="665" y="368" width="480" height="85" rx="11" fill="#202735" stroke="#48546C"/>
+<text x="683" y="402" font-size="19" fill="#AAB7CA">Type to speak...</text>
+<text x="683" y="436" font-size="12" fill="#8D9BB1">Enter to speak · Shift+Enter for new line</text>
+<rect x="665" y="467" width="196" height="35" rx="9" fill="#252E3C" stroke="#49586D"/>
+<text x="680" y="489" font-size="13" fill="#F1F3F8">Ryan · Medium  ⌄</text>
+<rect x="868" y="467" width="123" height="35" rx="9" fill="#252E3C" stroke="#49586D"/>
+<text x="881" y="489" font-size="13" fill="#F1F3F8">Output  ⌄</text>
+<rect x="997" y="467" width="148" height="35" rx="9" fill="#4F46E5"/>
+<text x="1043" y="489" font-size="13" font-weight="700" fill="#FFF">Speak</text>
+<line x1="665" x2="1145" y1="518" y2="518" stroke="#343C4E"/>
+<text x="671" y="540" font-size="13" font-weight="700" fill="#E8EDF6">Saved phrases</text>
+<text x="1076" y="540" font-size="12" fill="#A9B3FF">Recent  ↗</text>
+<rect x="665" y="551" width="480" height="31" rx="7" fill="#262E3D"/>
+<text x="678" y="571" font-size="13" fill="#E6ECF6">Be right back...</text><text x="1114" y="571" font-size="14" fill="#DDE5F4">▶</text>
+<rect x="665" y="588" width="480" height="31" rx="7" fill="#202735"/>
+<text x="678" y="609" font-size="13" fill="#E6ECF6">One moment, please...</text><text x="1114" y="609" font-size="14" fill="#DDE5F4">▶</text>
+<text x="645" y="680" fill="#93A1B5" font-size="13">Expand only when needed; otherwise leave just the slim overlay visible.</text>
+<text x="55" y="719" fill="#77859B" font-size="12">Concept only · design intent, not a screenshot of the shipped WPF implementation</text>
+</svg>

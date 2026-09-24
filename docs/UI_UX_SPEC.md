@@ -4,6 +4,8 @@
 **Based on:** the `10ishk/FlickVox` README (WPF · .NET 10 · Piper · NAudio) and your two screenshots (wide and narrow window).
 **Goal:** turn FlickVox from "a working tool with default-ish styling" into a product that feels fast, calm, trustworthy and unmistakably designed.
 
+**Compact-first amendment (24 Sep 2026):** Sections 9–10 and the compact concept supersede earlier screenshot-audit observations, wide-layout examples and speculative waveform/phrase-strip roadmap items. Retain Signal tokens and accessibility guidance; do not treat older concept sketches as implemented behavior.
+
 ---
 
 ## 0. TL;DR — the 12 decisions
@@ -19,9 +21,9 @@
 | 7 | Wordmark font | **Sora SemiBold** (wordmark only) |
 | 8 | Accessibility font option | **Atkinson Hyperlegible** as a user-selectable composer font |
 | 9 | Icons | **Fluent System Icons** (MIT), 20 px, replace all text glyphs (`✕`, `↗`) |
-| 10 | Main layout | **Composer-first**, action row, **voice bar of 3 chips**, **right rail** for Saved/Recent |
+| 10 | Main layout | **Compact composer-first**, action row, three chips, collapsible Saved/Recent below |
 | 11 | Settings | Move Voice / Output / Speed **out of the big always-visible card** into chips + flyouts |
-| 12 | Overlay | Single-line pill, 56 px tall, 94 % opaque ink, animated waveform while speaking, Ctrl+1–9 phrase chips |
+| 12 | Overlay | 520 × 72 quick bar, truthful status, optional expanded drawer in the same window |
 
 If you only have one evening: do **Section 2 (fix the audit list)** and **Phase 0** in Section 19. That alone removes everything that looks "unfinished".
 
@@ -80,11 +82,11 @@ A lightweight, **fully offline** Windows text-to-speech app for everyday communi
 | 9 | `↗` button top-right has no label | Users can't guess it opens the overlay | Icon + label "Overlay" with tooltip and the hotkey | P1 |
 | 10 | "Ctrl + Alt + T" is a pill of low-contrast text; in the narrow shot it is light grey on white | Reads as a disabled button | Render as **keycaps** `Ctrl` `Alt` `T`, informational, clickable to rebind | P1 |
 | 11 | "Ready" pill: label sits above the dot's centre line and is dark on dark blue | Misaligned + illegible | 28 px pill, dot + label centred, label in `Text` colour | P1 |
-| 12 | Wide window: the composer stretches ~1850 px | Long line lengths are hard to scan; feels empty | Cap content width (~1080 px) or use a right rail (§9.1) | P1 |
+| 12 | Wide window: the composer stretches ~1850 px | Long line lengths are hard to scan; feels empty | Keep the compact content width even when resized wider (§9) | P1 |
 | 13 | Native-looking slider thumb and checkbox in a custom dark UI | Style breaks | Restyle Slider/CheckBox/ComboBox with the token set (§11) | P2 |
 | 14 | Four buttons of near-equal weight; **Stop** visible even when idle | Weak hierarchy | One primary (Speak↔Stop), one secondary (Repeat); move "Preview voice" into the voice flyout | P2 |
 | 15 | Every region is the same heavy dark card with a strong outline | No hierarchy, feels boxy | Fewer boxes; 1 px subtle strokes; the composer gets the emphasis | P2 |
-| 16 | Empty Saved/Recent cards take ~25 % of the window | Wasted space for a first-run screen | Right rail with helpful empty states + starter phrases (§14) | P2 |
+| 16 | Empty Saved/Recent cards take ~25 % of the window | Wasted space for a first-run screen | Collapsible section with conditional empty states (§9) | P2 |
 
 ---
 
@@ -278,7 +280,7 @@ FlickVox
 │   ├─ Header: brand · status · hotkey · Overlay · Settings
 │   ├─ Composer + action row
 │   ├─ Voice bar: Voice · Output · Speed (flyouts)
-│   └─ Right rail: [Saved | Recent]
+│   └─ Collapsible [Saved | Recent] below composer/actions
 ├─ Overlay (global hotkey)          ← the most-used surface
 ├─ Voice Manager (dialog)
 ├─ Settings (dialog/page): General · Voice & audio · Overlay · Appearance · Accessibility · About
@@ -320,144 +322,31 @@ Interaction rules:
 
 ---
 
-## 9. Main window
+## 9. Compact main window
 
-### 9.1 Wide layout (≥ 900 px) — recommended
+The compact-first layout supersedes the former wide two-column dashboard. The default outer size is approximately 520 × 500 DIPs; minimum dimensions are practical rather than fixed to the concept artwork. The content scrolls as text scaling or window size demands. There is no permanent right rail or bottom footer.
 
-```
-┌───────────────────────────────────────────────────────────────────────────────────┐
-│ (F) FlickVox  ● Ready         [Ctrl][Alt][T]   [ ⧉ Overlay ]  [ ⚙ ]     ─   □   ✕ │  52 px header
-├──────────────────────────────────────────────────────────┬────────────────────────┤
-│ ┌──────────────────────────────────────────────────────┐ │  ( Saved | Recent )    │
-│ │ Type something to say…                               │ │  [ Search phrases… ]   │
-│ │                                                      │ │ ┌────────────────────┐ │
-│ │                                                      │ │ │ On my way       ▶ ☆│ │
-│ │                                                      │ │ └────────────────────┘ │
-│ │ ↵ Speak   ⇧↵ New line                    ☆ Save   ✕  │ │ ┌────────────────────┐ │
-│ └──────────────────────────────────────────────────────┘ │ │ One second, please │ │
-│                                                          │ └────────────────────┘ │
-│ [ ▶  Speak ] [ ↻ Repeat ]     (Ryan·Medium ▾)(Default output ▾)(1.0× ▾)           │
-│                                                          │                        │
-└──────────────────────────────────────────────────────────┴────────────────────────┘
-        ↑ 24 px padding · 16 px gaps · content max-width 1200 px, centred
-```
+- Header: waveform brand, FlickVox name, short truthful status, Overlay action and Settings action. The shortcut belongs in the tooltip and Settings, not permanent keycaps.
+- Composer: the primary 158-DIP surface, multiline input, conditional placeholder and Save/Clear actions. Enter speaks, Shift+Enter inserts a newline. A long message scrolls inside the composer.
+- Voice, Output and Speed: three working chips with flyouts. The row wraps naturally; long output names trim with full-name tooltips. Configuration is distinct from Speak/Stop and Repeat.
+- Actions: Repeat is one click away and disabled until a valid last message exists. Speak becomes Stop while active.
+- Saved/Recent: a single collapsible section beneath the actions. Expanded state and selected tab persist. Saved rows expose Play, Edit/Rename and confirmed Delete; Recent rows expose Play. Empty states are conditional.
+- Errors: a short status in the header; detailed actionable guidance in a separate notification.
+- Readiness: “Ready” requires Piper and the selected voice. Missing dependencies open a lightweight setup path.
 
-Grid: `ColumnDefinitions = *, 16, 320` (rail may grow 280 → 380). Rows: header 52, content `*`, optional footer 32.
-Default window **1000 × 640**, minimum **560 × 480**.
-
-**Header**
-- Custom title bar merged with the header (dark, Mica if available). Left: 24 px logo tile + wordmark + status pill. Right: keycaps (clickable → Settings › Hotkey), **Overlay** button (icon + label, secondary style), gear icon button, then window controls.
-- Height 52. The entire empty area is the drag region. No hairline under it.
-
-**Composer (hero)**
-- Surface card, radius 18, padding 20, min-height 168, grows with the window (max ~45 % of height).
-- Text 22/32 (user-adjustable 16–40), placeholder *"Type something to say…"* in `TextTertiary`.
-- Inline footer: left keycap hints (`↵ Speak`, `⇧↵ New line`, in `TextTertiary`), right **☆ Save** and **✕ Clear** icon buttons (visible only when there is text).
-- States: default 1 px `StrokeSubtle` · focus 2 px `AccentText` ring · speaking 1 px `Signal` ring + `SignalSubtle` glow · error 1 px `Danger`.
-
-**Action row** (single row when the column ≥ 720 px, else the chips wrap below)
-- **Speak** — the *only* accent-filled control. 44 px high, min-width 140, play icon + label.
-  When speaking it **morphs into Stop** (same size/position, no layout shift; `SurfaceRaised` fill with a coral stop icon). This removes one permanent button and makes Esc/Stop obvious.
-- **Repeat** — secondary style; disabled until something has been spoken.
-- **Voice bar** on the right (see 9.3).
-
-### 9.2 Narrow layout (< 760 px)
-```
-┌──────────────────────────────────────────────┐
-│ (F) FlickVox ● Ready            [⧉]  [⚙]     │
-├──────────────────────────────────────────────┤
-│ ┌──────────────────────────────────────────┐ │
-│ │ Type something to say…                   │ │
-│ │ ↵ Speak                       ☆   ✕      │ │
-│ └──────────────────────────────────────────┘ │
-│ [ ▶ Speak ]  [ ↻ ]                           │
-│ (Ryan·Medium ▾) (Default output ▾) (1.0× ▾)  │
-│ ( Saved | Recent )                           │
-│  On my way                            ▶ ☆    │
-│  One second, please                   ▶ ☆    │
-└──────────────────────────────────────────────┘
-```
-- The right rail drops **below** the action row; the whole content area scrolls (`ScrollViewer`), never clipped by a footer.
-- Hotkey keycaps hide (available in tooltip of the Overlay button). Overlay button becomes icon-only.
-- Chips go full width and stack below 520 px. Truncate with ellipsis + full-value tooltip.
-
-### 9.3 Voice bar (replaces the big settings card)
-Three chips, 36 px high, radius 10, `SurfaceRaised` fill, 1 px `StrokeControl`:
-
-| Chip | Shows | Flyout content |
-|---|---|---|
-| 🗣 **Voice** | `Ryan · Medium` | Installed voices (radio list) each with ▶ preview; footer link **Manage voices…** |
-| 🔊 **Output** | `Default output` / device name | Device list (radio), **Volume** slider (NAudio `VolumeSampleProvider`), **Test sound** button; unplugged device shown with warning icon and auto-fallback |
-| ⏱ **Speed** | `1.0×` | Slider 0.5×–2.0× (verify Piper range), presets `0.75×  1×  1.25×  1.5×`, double-click thumb resets, **Preview** button |
-
-Flyout spec: width 320, radius 14, elevation 2, opens under the chip (or above if no room), Esc closes, arrow keys move, Enter selects.
-Slider style: 4 px track, filled part `AccentText`, thumb 20 px white with 2 px `Accent` ring, focus ring visible, value label right-aligned in tabular figures.
-**"Preview voice" moves into the Voice and Speed flyouts** (it's a configuration action, not a primary action).
-
-### 9.4 Right rail — Saved | Recent
-- **Segmented control** (pill) at top: *Saved* · *Recent*. Search field appears when the list has > 8 items.
-- **Item:** min-height 44, radius 10, text (max 2 lines, ellipsis), hover → `SurfaceHover` and reveals action icons (▶ speak · ☆ pin/save · ⋯ edit/copy/delete). Selected/keyboard-focused → `AccentSubtle` fill + 2 px `Accent` left bar.
-- **Saved** supports drag-to-reorder (grip appears on hover) and the first 9 show `Ctrl+1…9` keycaps.
-- **Recent** shows the last 20, newest first, with relative time on hover ("2 min ago"); "Clear history" in the ⋯ menu.
-- Empty states are helpful, not blank (see §14).
-- Later: phrase **categories** (Everyday · Gaming · Work) as filter chips above the list.
-
-### 9.5 "One-afternoon" version of the layout
-If you don't want to restructure yet, keep the current stack but:
-1. Fix the theme (§2 rows 1–5) — this alone is 80 % of the improvement.
-2. Turn the settings card into **one full-width row**: Voice (2 fr) · Output (2 fr) · Speed (1.5 fr), with **Manage voices** as a text link on the Voice label row.
-3. Put Saved/Recent side by side only when width ≥ 900, otherwise stack.
-4. Replace `✕`, `↗` with real icons + tooltips; move Clear to the composer's bottom-right.
-5. Make **Stop** disabled unless speaking; remove the outline from Repeat/Preview.
+The supplied [compact concept](design/flickvox_compact_concept.svg) is a visual reference, not a literal WPF implementation. Signal resources, iconography, accessibility and component guidance elsewhere in this document still apply.
 
 ---
 
-## 10. The Overlay (design this like a product of its own)
+## 10. Quick and expanded overlay
 
-### 10.1 Wireframes
-```
-Idle / empty                                                    (56 px tall, 640 px wide)
-┌──────────────────────────────────────────────────────────────────┐
-│ ⠿  Type to speak…                                        [ Esc ] │
-└──────────────────────────────────────────────────────────────────┘
-   ┌───────────┐ ┌────────────┐ ┌───────────┐ ┌────────┐
-   │ 1 Hello   │ │ 2 One sec  │ │ 3 Thanks  │ │ 4 GG   │        ← pinned phrases (Ctrl+1…)
-   └───────────┘ └────────────┘ └───────────┘ └────────┘
+The quick overlay is one floating window, approximately 520 × 72 DIPs for new settings. Existing personalized size and position are preserved. Its dedicated drag grip does not interfere with input selection. The bar shows a text box and truthful Ready, Typing, Preparing, Speaking or Error status; no simulated waveform.
 
-Typing                                                           Speaking
-┌──────────────────────────────────────────────┐   ┌──────────────────────────────────────────────┐
-│ ⠿  Enemy on the left ba|          [ ↵ Speak ]│   │ ⠿  Enemy on the left balcony   ▂▅▇▅▂  [Esc Stop]│
-└──────────────────────────────────────────────┘   └──────────────────────────────────────────────┘
-                                                    (1 px mint ring + soft mint glow)
-```
+Ctrl+Alt+T remains the default global shortcut. It opens the quick bar and focuses input. Enter speaks; Shift+Enter inserts a newline; Escape stops/dismisses; Up/Down traverse shared recent history. Hide-after-speaking occurs **only after successful playback**, and errors retain the draft. Saved positions are clamped to visible monitor work areas. Exclusive-fullscreen games and focus restoration may be constrained by Windows; no injection is used.
 
-### 10.2 Specification
-
-| Property | Spec |
-|---|---|
-| Size | Width 640 (presets: 520 / 640 / 800), height 56 → grows to max 168 with Shift+Enter |
-| Position | Default: bottom-centre of the **monitor with the foreground window**, 12 % above the bottom edge. Draggable by the grip or any empty area; remembered **per monitor**; double-click grip to reset |
-| Fill | `OverlayBg` 94 % opaque, radius 18, 1 px `#1AFFFFFF` border, elevation 3. (Avoid undocumented acrylic APIs — the semi-opaque solid is reliable and cheaper.) |
-| Input | 20/28, caret + selection in accent, transparent background, no visible textbox chrome |
-| Left | 16 px drag grip, `TextTertiary` |
-| Right (contextual) | empty → `Esc` keycap · typed → `↵ Speak` · speaking → waveform + `Esc Stop` · error → warning icon + short message + "Fix" |
-| Output tag | If output ≠ default show a small chip `→ Wave Link` so users don't speak into the wrong device |
-| Waveform | 5–7 bars, 3 px wide, 3 px gap, 4–20 px tall, `Signal` colour, driven by real audio level (NAudio `MeteringSampleProvider`/peak) at ~30 fps; fallback: gentle looping animation |
-| Phrase strip | Shown only when the input is empty and phrases are pinned; chips 32 px, radius 10; `Ctrl+1…9` |
-| Window flags | `Topmost`, no taskbar/Alt-Tab entry (`WS_EX_TOOLWINDOW`), no title bar, `AllowsTransparency` (fine for a small window) |
-| Entrance / exit | 120 ms fade + scale 0.97 → 1 (ease-out) / 100 ms fade-out; disabled if reduced-motion |
-
-### 10.3 Behaviour
-- **Summon** → focus is in the input within 150 ms; previous window remembered for focus restore.
-- **Enter** speaks. Then, per setting *"After speaking"*: **hide when audio finishes** (default; keeps the waveform visible during speech) · hide immediately · stay open.
-- **Esc**: first press stops speech; second press (or when idle) hides and restores focus to the previous window.
-- **↑ / ↓** cycle recent messages.
-- **Draft safety**: text left after Esc is restored if you re-summon within 60 s.
-- **Don't auto-dismiss on click-away** by default (avoids losing text); optional setting "Hide when it loses focus".
-- **Exclusive-fullscreen games** can't show overlays: show a one-time tip at first run — *"For overlays to appear over a game, use Borderless / Windowed Fullscreen."* (matches the README's limitation note).
+An expand affordance opens a drawer in the same overlay instance. It includes voice and output selectors, Speak/Stop, and shared Saved/Recent lists with visible Play actions. Collapse returns to the minimal bar. Shortcut invocation prefers the quick bar even if an expanded preference was previously stored. The expanded height is not written over the user's quick-bar height.
 
 ---
-
 ## 11. Component specifications
 
 ### 11.1 Buttons
@@ -800,25 +689,25 @@ public static string FriendlyName(string id)
 </Style>
 ```
 
-### 18.6 Overlay window skeleton
+### 18.6 Overlay window skeleton (compact-first)
 ```xml
 <Window x:Class="FlickVox.OverlayWindow"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ShowInTaskbar="False" Topmost="True" ResizeMode="NoResize"
-        SizeToContent="Height" Width="688">          <!-- 640 + 2×24 shadow margin -->
-  <Border Margin="24" CornerRadius="18"
+        Width="520" Height="72">
+  <Border Margin="8" CornerRadius="18"
           Background="{DynamicResource Brush.OverlayBg}"
           BorderBrush="#1AFFFFFF" BorderThickness="1">
     <Border.Effect>
       <DropShadowEffect BlurRadius="32" ShadowDepth="8" Direction="270" Opacity="0.5"/>
     </Border.Effect>
-    <!-- grip · TextBox (transparent) · hint / waveform -->
+    <!-- grip · TextBox (transparent) · status · expand/collapse -->
   </Border>
 </Window>
 ```
 - Add `WS_EX_TOOLWINDOW` to the extended style so it doesn't appear in Alt-Tab.
-- Account for the 24 px shadow margin when positioning.
-- Waveform: a small custom control that renders N rounded rectangles from a `float[]` of levels; feed it from an NAudio `MeteringSampleProvider` (or peak calculation) on a 30 fps `DispatcherTimer`.
+- Account for the 8 px border margin when positioning. Preserve existing user dimensions.
+- An expanded drawer is part of the same window and scrolls when working-area height is limited. Do not draw an unverified waveform.
 
 ### 18.7 Rendering, DPI, accessibility plumbing
 - **Per-monitor DPI v2** in `app.manifest` so text stays sharp when moving between monitors or at 125/150 %:
@@ -842,9 +731,9 @@ public static string FriendlyName(string id)
 - [ ] Root `Background`, `TextElement.Foreground`, and implicit control styles (§18.3)
 - [ ] Dark title bar via DWM (§18.2 step 1)
 - [ ] Voice combo shows `Ryan · Medium` (§18.4)
-- [ ] Footer separated from content; content in a `ScrollViewer` (narrow window no longer clipped)
+- [ ] Remove the permanent footer; content in a `ScrollViewer` (narrow window no longer clipped)
 - [ ] Remove the stray hairline / blank band above the header
-- [ ] Status pill text centred and legible; footer items spaced
+- [ ] Compact status text legible; long errors in a separate notice
 - **Done when:** both screenshots have consistent dark theme, no truncated/clipped text, all text ≥ 4.5 : 1.
 
 ### Phase 1 — Design system (1 weekend)
@@ -858,14 +747,14 @@ public static string FriendlyName(string id)
 - [ ] Composer-first layout with inline footer (hints · Save · Clear)
 - [ ] Speak ↔ Stop morph, Repeat secondary
 - [ ] Voice bar chips + flyouts (Voice, Output + volume, Speed + presets)
-- [ ] Right rail with Saved/Recent, hover actions, empty states
-- [ ] Responsive: wide ≥ 900, narrow < 760, min 560 × 480; max content width
-- **Done when:** the window is usable and good-looking at 560 × 480, 1000 × 640 and 1920 × 1080, at 100/125/150/200 % scaling.
+- [ ] Collapsible Saved/Recent beneath actions with visible Play/Edit/Delete and conditional empty states
+- [ ] Compact 520 × 500 default, practical minimum, wrapping chips and vertical scrolling
+- **Done when:** the window is usable at default/minimum size and at 100/125/150/200 % scaling.
 
 ### Phase 3 — Overlay polish (1 weekend)
 - [ ] New pill design, drag grip, per-monitor position memory
-- [ ] States: empty · typing · preparing · speaking (waveform) · error
-- [ ] Pinned phrase chips + `Ctrl+1…9`, ↑/↓ recall, draft safety, after-speaking options
+- [ ] States: ready · typing · preparing · speaking · error
+- [ ] Shared saved/recent access in an expanded drawer; ↑/↓ recall; hide only after successful playback
 - [ ] Entrance/exit animation, hidden-but-alive window
 - **Done when:** hotkey → typing feels instant, and you'd be happy to record a GIF of it.
 
@@ -904,7 +793,7 @@ Phrase categories · import/export phrases · per-app output routing presets · 
 - [ ] Dark, Light and High-contrast themes
 - [ ] 100 / 125 / 150 / 200 % scaling; mixed-DPI dual monitors
 - [ ] Windows 10 (no Mica, no Segoe UI Variable) **and** Windows 11
-- [ ] Window sizes: 560 × 480, 1000 × 640, 1920 × 1080, 3440 × 1440
+- [ ] Window sizes: compact default/minimum, resized wider, and Windows text scaling
 - [ ] Long voice/device names truncate with ellipsis + tooltip
 - [ ] Empty, loading, error, speaking states for every screen
 - [ ] Overlay on primary and secondary monitors, over a borderless-windowed game, over a light-coloured app (legibility of the dark pill)
@@ -916,7 +805,7 @@ Phrase categories · import/export phrases · per-app output routing presets · 
 Your repo currently shows *"No description, website, or topics"* and *"Screenshots will be added later."* Fixing this makes the project look shipped.
 - **Repo description:** *"Offline, lightning-fast text-to-speech overlay for Windows — powered by Piper."*
 - **Topics:** `text-to-speech` `piper-tts` `wpf` `dotnet` `windows` `accessibility` `aac` `overlay` `naudio` `offline`
-- **Hero GIF (8–10 s):** hotkey → type → Enter → waveform → overlay fades. Then 3 stills: main window (dark), overlay over a game/desktop, Voice Manager.
+- **Hero GIF (8–10 s):** hotkey → type → Enter → truthful speaking state → overlay hides after playback. Then 3 stills: main window (dark), quick/expanded overlay, Voice Manager.
 - **Badges:** .NET 10 · Windows 10/11 · Offline · licence.
 - **Sections:** *Why FlickVox* (3 bullets: fast, offline, works with Wave Link/voice chat) · Screenshots · Install · Shortcuts table · Roadmap · Credits (Piper, NAudio).
 - Add a **social-preview image** (1280 × 640): logo tile + tagline on the ink background.

@@ -1,0 +1,21 @@
+<Window x:Class="FlickVox.PhraseEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Saved phrase" Width="420" Height="300" MinWidth="340" MinHeight="260"
+        WindowStartupLocation="CenterOwner" Background="{DynamicResource Brush.Canvas}"
+        Foreground="{DynamicResource Brush.Text}" TextElement.Foreground="{DynamicResource Brush.Text}">
+  <Grid Margin="20">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <TextBlock Text="Name" Style="{StaticResource FieldLabel}"/>
+    <TextBox x:Name="PhraseName" Grid.Row="1" Margin="0,8,0,16" AutomationProperties.Name="Phrase name"/>
+    <StackPanel Grid.Row="2">
+      <TextBlock Text="Text to speak" Style="{StaticResource FieldLabel}"/>
+      <TextBox x:Name="PhraseText" Margin="0,8,0,0" Height="100" AcceptsReturn="True" TextWrapping="Wrap"
+               VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Phrase text"/>
+    </StackPanel>
+    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+      <Button Content="Cancel" IsCancel="True" Margin="0,0,8,0"/>
+      <Button Content="Save phrase" Style="{StaticResource PrimaryButton}" Click="Save" IsDefault="True"/>
+    </StackPanel>
+  </Grid>
+</Window>
