@@ -48,7 +48,7 @@
       <Grid x:Name="Header" Height="34" Grid.Row="0" Background="Transparent" MouseLeftButtonDown="Drag">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="11,0,0,0">
-          <Path Data="{StaticResource Icon.Speaker2}" Fill="{DynamicResource Brush.TextSecondary}" Width="15" Height="15" Stretch="Uniform" Margin="0,0,7,0"/>
+          <Image Source="Assets/Branding/flickvox-icon.png" Width="20" Height="20" Stretch="Uniform" Margin="0,0,5,0"/>
           <TextBlock Text="FlickVox" FontFamily="{StaticResource Font.Brand}" FontSize="13" VerticalAlignment="Center"/>
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,5,0">
