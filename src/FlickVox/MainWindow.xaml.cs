@@ -119,6 +119,15 @@ public partial class MainWindow : Window
         StatusDot.Fill = (Brush)FindResource("Brush.TextTertiary");
         ComposerCard.BorderBrush = (Brush)FindResource("Brush.Danger");
     }
+    void DismissNotice(object sender, RoutedEventArgs e)
+    {
+        Notice.Visibility = Visibility.Collapsed;
+        if (DependenciesReady() && !_settings.Current.FirstSpeechConfirmed)
+        {
+            _settings.Current.FirstRunGuidanceDismissed = true;
+            _settings.Save();
+        }
+    }
 
     bool DependenciesReady() =>
         File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FlickVox", "runtime", "piper", "piper.exe"))
@@ -131,14 +140,14 @@ public partial class MainWindow : Window
             SetStatus("Ready");
             if (!_settings.Current.FirstSpeechConfirmed && !_settings.Current.FirstRunGuidanceDismissed)
             {
-                NoticeText.Text = "Ready for a first test. Confirm audible output in Setup; voice-chat routing needs a virtual audio device.";
+                NoticeText.Text = "Ready for a first audio test.";
                 NoticeAction.Visibility = Visibility.Visible;
                 Notice.Visibility = Visibility.Visible;
             }
             else Notice.Visibility = Visibility.Collapsed;
             return;
         }
-        ShowNotice("Speech setup is incomplete. Install Piper or download the selected voice, then try a test message.", true);
+        ShowNotice("Piper or the selected voice is missing.", true);
     }
 
     async void PrimaryAction(object sender, RoutedEventArgs e)
@@ -230,6 +239,7 @@ public partial class MainWindow : Window
         if (Voice.SelectedItem is not VoiceDefinition voice || VoiceValue is null) return;
         _settings.Current.VoiceId = voice.Id;
         VoiceValue.Text = voice.ToString();
+        VoiceChip.ToolTip = voice.DisplayName;
         _settings.Save();
         VoiceFlyout.IsOpen = false;
         if (IsLoaded) CheckReadiness();
