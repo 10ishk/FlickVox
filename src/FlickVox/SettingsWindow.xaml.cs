@@ -2,6 +2,9 @@ using FlickVox.Infrastructure;
 using FlickVox.Models;
 using FlickVox.Services;
 using NAudio.Wave;
+using System.Windows.Media;
+using Brush = System.Windows.Media.Brush;
+using Button = System.Windows.Controls.Button;
 
 namespace FlickVox;
 
@@ -32,7 +35,7 @@ public partial class SettingsWindow : Window
         AlwaysOnTop.IsChecked = settings.Current.AlwaysOnTop;
         QuickPillWidth.Value = Math.Clamp(settings.Current.UnifiedQuickWidth, QuickPillWidth.Minimum, QuickPillWidth.Maximum);
         ComposerSize.Value = settings.Current.ComposerFontSize;
-        Theme.SelectedIndex = settings.Current.Theme switch { "Light" => 1, "System" => 2, _ => 0 };
+        RefreshThemeSwatches();
         ComposerFont.SelectedIndex = settings.Current.ComposerFont switch { "Atkinson Hyperlegible" => 1, "System" => 2, _ => 0 };
         Sections.SelectedIndex = 0;
         UpdateValues();
@@ -119,12 +122,30 @@ public partial class SettingsWindow : Window
         ComposerSizeValue.Text = $"{ComposerSize.Value:F0} px";
         Save(s => s.ComposerFontSize = ComposerSize.Value);
     }
-    void ThemeChanged(object sender, SelectionChangedEventArgs e)
+    public sealed record ThemeSwatch(string Name, Brush Background, Brush Surface, Brush Accent,
+        Brush PreviewText, Brush Outline, bool Selected, string Hint);
+
+    void RefreshThemeSwatches()
     {
-        if (!_ready) return;
-        var theme = Theme.SelectedIndex switch { 1 => "Light", 2 => "System", _ => "Dark" };
+        var selected = ThemeManager.Normalize(_settings.Current.Theme);
+        ThemeSwatches.ItemsSource = ThemeManager.Choices.Select(name =>
+        {
+            var colors = ThemeManager.Preview(name);
+            var foreground = ThemeManager.Contrast(Colors.White, colors.Background) >= 4.5 ? Colors.White : Colors.Black;
+            var isSelected = selected == name;
+            return new ThemeSwatch(name, new SolidColorBrush(colors.Background), new SolidColorBrush(colors.Surface),
+                new SolidColorBrush(colors.Accent), new SolidColorBrush(foreground),
+                isSelected ? (Brush)FindResource("Brush.AccentText") : (Brush)FindResource("Brush.StrokeControl"),
+                isSelected, $"{name} theme{(isSelected ? ", selected" : "")}");
+        }).ToList();
+    }
+
+    void PickTheme(object sender, RoutedEventArgs e)
+    {
+        if (!_ready || sender is not Button { Tag: string theme }) return;
         Save(s => s.Theme = theme);
         ThemeManager.SetPreference(theme);
+        RefreshThemeSwatches();
     }
     void ComposerFontChanged(object sender, SelectionChangedEventArgs e)
     {

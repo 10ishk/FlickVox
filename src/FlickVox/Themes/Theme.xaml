@@ -3,9 +3,6 @@
   <FontFamily x:Key="Font.UI">pack://application:,,,/Assets/Fonts/#Inter, Segoe UI Variable Text, Segoe UI</FontFamily>
   <FontFamily x:Key="Font.Brand">pack://application:,,,/Assets/Fonts/#Sora, Segoe UI</FontFamily>
   <FontFamily x:Key="Font.Accessible">pack://application:,,,/Assets/Fonts/#Atkinson Hyperlegible, Segoe UI</FontFamily>
-  <LinearGradientBrush x:Key="Brush.Brand" StartPoint="0,0" EndPoint="1,1">
-    <GradientStop Color="#6C63FF" Offset="0"/><GradientStop Color="#3DDBB5" Offset="1"/>
-  </LinearGradientBrush>
   <CornerRadius x:Key="Radius.Card">14</CornerRadius>
   <CornerRadius x:Key="Radius.Control">10</CornerRadius>
   <Thickness x:Key="Space.Window">24</Thickness>
@@ -114,19 +111,20 @@
     <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
     <Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/>
     <Setter Property="CaretBrush" Value="{DynamicResource Brush.AccentText}"/>
-    <Setter Property="SelectionBrush" Value="#664F46E5"/>
+    <Setter Property="SelectionBrush" Value="{DynamicResource Brush.Selection}"/>
   </Style>
   <Style TargetType="ComboBoxItem">
     <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
     <Setter Property="Background" Value="{DynamicResource Brush.SurfaceRaised}"/>
     <Setter Property="Padding" Value="12,8"/>
     <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBoxItem">
-      <Border x:Name="Row" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+      <Border x:Name="Row" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" BorderThickness="0,0,0,0">
         <ContentPresenter/>
       </Border>
       <ControlTemplate.Triggers>
         <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Row" Property="Background" Value="{DynamicResource Brush.SurfaceHover}"/></Trigger>
-        <Trigger Property="IsSelected" Value="True"><Setter TargetName="Row" Property="Background" Value="{DynamicResource Brush.AccentSubtle}"/></Trigger>
+        <Trigger Property="IsSelected" Value="True"><Setter TargetName="Row" Property="Background" Value="{DynamicResource Brush.AccentSubtle}"/><Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/><Setter TargetName="Row" Property="BorderThickness" Value="3,0,0,0"/></Trigger>
+        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Row" Property="BorderBrush" Value="{DynamicResource Brush.AccentText}"/><Setter TargetName="Row" Property="BorderThickness" Value="2"/></Trigger>
       </ControlTemplate.Triggers>
     </ControlTemplate></Setter.Value></Setter>
   </Style>
@@ -185,7 +183,7 @@
       </Border>
       <ControlTemplate.Triggers>
         <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Item" Property="Background" Value="{DynamicResource Brush.SurfaceHover}"/></Trigger>
-        <Trigger Property="IsSelected" Value="True"><Setter TargetName="Item" Property="Background" Value="{DynamicResource Brush.AccentSubtle}"/></Trigger>
+        <Trigger Property="IsSelected" Value="True"><Setter TargetName="Item" Property="Background" Value="{DynamicResource Brush.AccentSubtle}"/><Setter TargetName="Item" Property="BorderBrush" Value="{DynamicResource Brush.Accent}"/><Setter TargetName="Item" Property="BorderThickness" Value="3,0,0,0"/></Trigger>
         <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Item" Property="BorderBrush" Value="{DynamicResource Brush.AccentText}"/><Setter TargetName="Item" Property="BorderThickness" Value="2"/></Trigger>
       </ControlTemplate.Triggers>
     </ControlTemplate></Setter.Value></Setter>
@@ -245,6 +243,23 @@
     <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
     <Setter Property="BorderBrush" Value="{DynamicResource Brush.StrokeControl}"/>
     <Setter Property="Padding" Value="8,6"/><Setter Property="FontSize" Value="12"/>
+  </Style>
+  <Style TargetType="ContextMenu">
+    <Setter Property="Background" Value="{DynamicResource Brush.SurfaceRaised}"/>
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.StrokeControl}"/>
+    <Setter Property="BorderThickness" Value="1"/>
+  </Style>
+  <Style TargetType="MenuItem">
+    <Setter Property="Foreground" Value="{DynamicResource Brush.Text}"/>
+    <Setter Property="Background" Value="{DynamicResource Brush.SurfaceRaised}"/>
+    <Setter Property="Padding" Value="10,6"/>
+    <Style.Triggers>
+      <Trigger Property="IsHighlighted" Value="True">
+        <Setter Property="Background" Value="{DynamicResource Brush.AccentSubtle}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Brush.AccentText}"/>
+      </Trigger>
+    </Style.Triggers>
   </Style>
   <Style TargetType="ScrollBar">
     <Setter Property="Width" Value="10"/>

@@ -2,6 +2,9 @@ using System.Runtime.InteropServices;
 using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Automation;
+using System.Windows.Automation.Peers;
 using FlickVox.Models;
 using FlickVox.Services;
 using NAudio.Wave;
@@ -12,12 +15,14 @@ using Brush = System.Windows.Media.Brush;
 using Button = System.Windows.Controls.Button;
 using MessageBox = System.Windows.MessageBox;
 using FontFamily = System.Windows.Media.FontFamily;
+using Border = System.Windows.Controls.Border;
 
 namespace FlickVox;
 
 public partial class MainWindow : Window
 {
     [DllImport("user32.dll")] static extern nint GetForegroundWindow();
+    [DllImport("user32.dll", SetLastError = true)] static extern bool SystemParametersInfo(uint action, uint parameter, out int value, uint update);
 
     readonly SettingsService _settings = new();
     readonly VoiceManager _voices = new();
@@ -146,6 +151,7 @@ public partial class MainWindow : Window
         SavedArea.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
         Footer.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
         ExpandQuickButton.Visibility = expanded ? Visibility.Collapsed : Visibility.Visible;
+        SaveButton.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
         Notice.Visibility = expanded && NoticeText.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         Shell.CornerRadius = new CornerRadius(expanded ? 14 : 24);
         ComposerCard.CornerRadius = new CornerRadius(expanded ? 10 : 24);
@@ -169,7 +175,7 @@ public partial class MainWindow : Window
 
     double ExpandedContentHeight()
     {
-        var contentHeight = 240 + Math.Min(_phrases.Items.Count, 2) * 30
+        var contentHeight = 211 + Math.Min(_phrases.Items.Count, 2) * 30
             + (Notice.Visibility == Visibility.Visible ? 35 : 0);
         return Math.Min(Math.Clamp(_settings.Current.UnifiedExpandedHeight, 260, 600), contentHeight);
     }
@@ -186,7 +192,7 @@ public partial class MainWindow : Window
     }
     void UpdatePin()
     {
-        PinButton.Background = (Brush)FindResource(Topmost ? "Brush.AccentSubtle" : "Brush.Canvas");
+        PinButton.SetResourceReference(Button.BackgroundProperty, Topmost ? "Brush.AccentSubtle" : "Brush.Canvas");
         PinButton.ToolTip = Topmost ? "Unpin FlickVox" : "Keep FlickVox on top";
     }
     void Drag(object sender, MouseButtonEventArgs e)
@@ -276,28 +282,22 @@ public partial class MainWindow : Window
             UiState.Speaking => "Speaking",
             _ => "Error"
         };
-        var dot = state switch
-        {
-            UiState.Speaking => "Brush.Signal",
-            UiState.Error => "Brush.Danger",
-            _ => "Brush.TextTertiary"
-        };
-        StatusDot.Fill = (Brush)FindResource(dot);
-        ComposerCard.BorderBrush = (Brush)FindResource(state switch
+        UpdateStatusIndicator(state);
+        ComposerCard.SetResourceReference(Border.BorderBrushProperty, state switch
         {
             UiState.Speaking => "Brush.SignalBorder",
             UiState.Error => "Brush.Danger",
             _ => "Brush.StrokeControl"
         });
         SendIcon.Data = (Geometry)FindResource(_busy ? "Icon.Stop" : "Icon.Send");
-        SendButton.Background = (Brush)FindResource(state switch
+        SendButton.SetResourceReference(Button.BackgroundProperty, state switch
         {
             UiState.Speaking => "Brush.Canvas",
             UiState.Preparing => "Brush.SurfaceHover",
             _ => "Brush.PrimaryAction"
         });
-        SendButton.BorderBrush = (Brush)FindResource(state == UiState.Speaking ? "Brush.Signal" : "Brush.PrimaryAction");
-        SendIcon.Fill = (Brush)FindResource(state switch
+        SendButton.SetResourceReference(Button.BorderBrushProperty, state == UiState.Speaking ? "Brush.Signal" : "Brush.PrimaryAction");
+        SendIcon.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, state switch
         {
             UiState.Speaking => "Brush.Signal",
             UiState.Preparing => "Brush.TextSecondary",
@@ -305,6 +305,38 @@ public partial class MainWindow : Window
         });
         SendButton.ToolTip = _busy ? "Stop speech · Esc" : "Speak · Enter";
         System.Windows.Automation.AutomationProperties.SetName(SendButton, _busy ? "Stop speech" : "Speak");
+    }
+    void UpdateStatusIndicator(UiState state)
+    {
+        var bars = new[] { StatusBar1, StatusBar2, StatusBar3 };
+        var key = state switch
+        {
+            UiState.Speaking => "Brush.Accent",
+            UiState.Error => "Brush.Danger",
+            _ => "Brush.TextTertiary"
+        };
+        var baseHeights = new[] { 4.0, 7.0, 4.0 };
+        var animationsAllowed = SystemParametersInfo(0x1042, 0, out var enabled, 0) && enabled != 0;
+        for (var i = 0; i < bars.Length; i++)
+        {
+            var bar = bars[i];
+            bar.BeginAnimation(FrameworkElement.HeightProperty, null);
+            bar.BeginAnimation(UIElement.OpacityProperty, null);
+            bar.Height = baseHeights[i];
+            bar.Opacity = 1;
+            bar.SetResourceReference(Border.BackgroundProperty, key);
+            if (!animationsAllowed) continue;
+            if (state == UiState.Preparing)
+                bar.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(.35, 1, TimeSpan.FromMilliseconds(520 + i * 90))
+                    { AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever });
+            else if (state == UiState.Speaking)
+                bar.BeginAnimation(FrameworkElement.HeightProperty, new DoubleAnimation(3, 13, TimeSpan.FromMilliseconds(300 + i * 110))
+                    { AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever });
+        }
+        StatusIndicator.ToolTip = StatusText.Text;
+        AutomationProperties.SetName(StatusIndicator, StatusText.Text);
+        var peer = UIElementAutomationPeer.FromElement(StatusIndicator) ?? UIElementAutomationPeer.CreatePeerForElement(StatusIndicator);
+        peer?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
     }
     void ShowNotice(string message, bool setupAction)
     {

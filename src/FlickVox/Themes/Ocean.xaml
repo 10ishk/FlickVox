@@ -1,0 +1,5 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Color x:Key="Color.Background">#0A1118</Color><Color x:Key="Color.Surface">#101C27</Color>
+  <Color x:Key="Color.SurfaceRaised">#192A38</Color><Color x:Key="Color.SurfaceHover">#253A4B</Color>
+  <Color x:Key="Color.Accent">#38BDF8</Color>
+</ResourceDictionary>

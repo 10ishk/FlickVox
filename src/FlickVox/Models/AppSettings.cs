@@ -1,7 +1,7 @@
 namespace FlickVox.Models;
 public sealed class AppSettings
 {
-    public string Theme { get; set; } = "Dark";
+    public string Theme { get; set; } = "System";
     public string VoiceId { get; set; } = "en_US-ryan-medium";
     public double Speed { get; set; } = 1;
     public float Volume { get; set; } = 0.85f;
