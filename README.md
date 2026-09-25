@@ -1,5 +1,7 @@
 <div align="center">
-  <img src="src/FlickVox/Assets/Branding/flickvox-logo.png" alt="FlickVox" width="280">
+  <img src="src/FlickVox/Assets/Branding/flickvox-icon.png" alt="FlickVox Local Signal icon" width="112">
+
+  <h1>FlickVox</h1>
 
   <p>A lightweight, offline text-to-speech companion for Windows, powered by Piper.</p>
 
