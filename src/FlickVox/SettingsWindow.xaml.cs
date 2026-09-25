@@ -3,6 +3,9 @@ using FlickVox.Models;
 using FlickVox.Services;
 using NAudio.Wave;
 using System.Windows.Media;
+using System.Diagnostics;
+using System.Reflection;
+using System.Windows.Navigation;
 using Brush = System.Windows.Media.Brush;
 using Button = System.Windows.Controls.Button;
 
@@ -13,14 +16,18 @@ public partial class SettingsWindow : Window
     readonly SettingsService _settings;
     readonly HotkeyService _hotkey;
     readonly HistoryService? _history;
+    readonly Action? _openTools;
     bool _ready;
 
-    public SettingsWindow(SettingsService settings, VoiceManager voices, HotkeyService hotkey, HistoryService? history = null)
+    public SettingsWindow(SettingsService settings, VoiceManager voices, HotkeyService hotkey, HistoryService? history = null, Action? openTools = null)
     {
         InitializeComponent();
         _settings = settings;
         _hotkey = hotkey;
         _history = history;
+        _openTools = openTools;
+        AboutVersion.Text = $"Version {typeof(App).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? typeof(App).Assembly.GetName().Version?.ToString(3) ?? "unknown"}";
+        OpenSpeechControlsButton.Visibility = openTools is null ? Visibility.Collapsed : Visibility.Visible;
         SourceInitialized += (_, _) => WindowBackdrop.ApplyDarkTitleBar(this);
         Voice.ItemsSource = VoiceManager.Voices;
         Voice.SelectedItem = VoiceManager.Voices.FirstOrDefault(v => v.Id == settings.Current.VoiceId);
@@ -161,4 +168,15 @@ public partial class SettingsWindow : Window
         if (e.Key == Key.Escape) Close();
     }
     void Close(object sender, RoutedEventArgs e) => Close();
+    void OpenSpeechControls(object sender, RoutedEventArgs e)
+    {
+        Close();
+        _openTools?.Invoke();
+    }
+    void OpenExternalLink(object sender, RequestNavigateEventArgs e)
+    {
+        try { Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true }); }
+        catch (Exception ex) { System.Windows.MessageBox.Show(this, ex.Message, "Could not open link", MessageBoxButton.OK, MessageBoxImage.Warning); }
+        e.Handled = true;
+    }
 }

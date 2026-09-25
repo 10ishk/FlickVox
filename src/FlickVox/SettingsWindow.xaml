@@ -32,6 +32,8 @@
                         Checked="PersistHistoryChanged" Unchecked="PersistHistoryChanged" Margin="0,18,0,0"/>
               <TextBlock Text="Off by default. Existing messages stay in memory until you exit."
                          Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+              <Button x:Name="OpenSpeechControlsButton" Content="Open speech controls" Click="OpenSpeechControls"
+                      HorizontalAlignment="Left" Margin="0,16,0,0" ToolTip="Open voice, output, speed, saved phrases and Repeat in FlickVox"/>
             </StackPanel>
             <StackPanel x:Name="AudioPanel" Visibility="Collapsed">
               <TextBlock Text="Voice &amp; audio" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
@@ -110,12 +112,22 @@
                          Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap"/>
             </StackPanel>
             <StackPanel x:Name="AboutPanel" Visibility="Collapsed">
-              <TextBlock Text="About FlickVox" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
-              <TextBlock Text="Version 0.1.0" Margin="0,0,0,8"/>
-              <TextBlock Text="Offline speech powered by Piper. Speech is generated on your PC."
-                         TextWrapping="Wrap" Margin="0,0,0,8"/>
-              <TextBlock Text="FlickVox source code is MIT licensed. Third-party licenses are listed in THIRD_PARTY_NOTICES.md."
-                         Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap"/>
+              <TextBlock Text="FlickVox" FontFamily="{StaticResource Font.Brand}" FontSize="20" FontWeight="SemiBold"/>
+              <TextBlock x:Name="AboutVersion" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,16"/>
+              <TextBlock Text="A lightweight, offline text-to-speech application powered by Piper."
+                         TextWrapping="Wrap" Margin="0,0,0,16"/>
+              <TextBlock Text="Created and maintained by 10ishk." Margin="0,0,0,8"/>
+              <TextBlock Margin="0,0,0,24">
+                <Hyperlink NavigateUri="https://github.com/10ishk/FlickVox" RequestNavigate="OpenExternalLink"
+                           Foreground="{DynamicResource Brush.AccentText}" ToolTip="Open FlickVox source in your browser">View source on GitHub</Hyperlink>
+              </TextBlock>
+              <TextBlock Text="Speech synthesis powered by Piper." Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,8"/>
+              <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextSecondary}">
+                FlickVox is licensed under the MIT License. Third-party acknowledgements and licenses are in
+                <Hyperlink NavigateUri="https://github.com/10ishk/FlickVox/blob/main/THIRD_PARTY_NOTICES.md"
+                           RequestNavigate="OpenExternalLink" Foreground="{DynamicResource Brush.AccentText}"
+                           ToolTip="Read third-party notices in your browser">THIRD_PARTY_NOTICES.md</Hyperlink>.
+              </TextBlock>
             </StackPanel>
           </Grid>
         </ScrollViewer>

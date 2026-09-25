@@ -66,6 +66,7 @@ public partial class MainWindow : Window
         RefreshPhrases();
         Topmost = _settings.Current.AlwaysOnTop;
         UpdatePin();
+        UpdateOverflowAvailability();
         SetMode(_settings.Current.UnifiedExpanded, persist: false);
         UpdatePlaceholder();
         _uiReady = true;
@@ -148,14 +149,12 @@ public partial class MainWindow : Window
         _expanded = expanded;
         _positionReady = false;
         Header.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
-        SavedArea.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
-        Footer.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
-        ExpandQuickButton.Visibility = expanded ? Visibility.Collapsed : Visibility.Visible;
-        SaveButton.Visibility = expanded ? Visibility.Visible : Visibility.Collapsed;
+        if (!expanded) OverflowPopup.IsOpen = false;
+        UpdateOverflowAvailability();
         Notice.Visibility = expanded && NoticeText.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-        Shell.CornerRadius = new CornerRadius(expanded ? 14 : 24);
+        Shell.CornerRadius = new CornerRadius(expanded ? 10 : 24);
         ComposerCard.CornerRadius = new CornerRadius(expanded ? 10 : 24);
-        ComposerCard.Margin = expanded ? new Thickness(12, 5, 12, 7) : new Thickness();
+        ComposerCard.Margin = expanded ? new Thickness(14, 8, 14, 8) : new Thickness();
         var quickHeight = Math.Max(Math.Clamp(_settings.Current.UnifiedQuickHeight, 48, 168),
             Math.Min(64, Input.FontSize + 18));
         ComposerCard.Height = expanded ? 84 : quickHeight - 2;
@@ -163,7 +162,7 @@ public partial class MainWindow : Window
         MinWidth = expanded ? 380 : 320;
         Width = expanded ? Math.Clamp(_settings.Current.UnifiedExpandedWidth, 380, 800)
                          : Math.Clamp(_settings.Current.UnifiedQuickWidth, 320, 800);
-        Height = expanded ? ExpandedContentHeight() : quickHeight;
+        Height = expanded ? ExpandedContentHeight() : quickHeight + (OnboardingPrompt.Visibility == Visibility.Visible ? 49 : 0);
         if (IsVisible) ClampToWorkingArea();
         _positionReady = true;
         if (persist)
@@ -175,9 +174,37 @@ public partial class MainWindow : Window
 
     double ExpandedContentHeight()
     {
-        var contentHeight = 211 + Math.Min(_phrases.Items.Count, 2) * 30
-            + (Notice.Visibility == Visibility.Visible ? 35 : 0);
-        return Math.Min(Math.Clamp(_settings.Current.UnifiedExpandedHeight, 260, 600), contentHeight);
+        var contentHeight = 145 + (OnboardingPrompt.Visibility == Visibility.Visible ? 49 : 0) + (Notice.Visibility == Visibility.Visible ? 35 : 0);
+        return OnboardingPrompt.Visibility == Visibility.Visible ? contentHeight
+            : Math.Min(Math.Clamp(_settings.Current.UnifiedExpandedHeight, 140, 600), contentHeight);
+    }
+
+    void UpdateOverflowAvailability()
+    {
+        if (_settings.Current.FirstSpeechConfirmed && !_settings.Current.OverflowUnlocked)
+        {
+            _settings.Current.OverflowUnlocked = true;
+            _settings.Save();
+        }
+        OverflowButton.Visibility = _expanded && _settings.Current.OverflowUnlocked ? Visibility.Visible : Visibility.Collapsed;
+        var onboarding = !_settings.Current.OverflowUnlocked;
+        OnboardingPrompt.Visibility = onboarding ? Visibility.Visible : Visibility.Collapsed;
+        BrandBlock.Visibility = onboarding ? Visibility.Collapsed : Visibility.Visible;
+        PinButton.Visibility = onboarding ? Visibility.Collapsed : Visibility.Visible;
+        SettingsButton.Visibility = onboarding ? Visibility.Collapsed : Visibility.Visible;
+        CollapseButton.Visibility = onboarding ? Visibility.Collapsed : Visibility.Visible;
+        CloseButton.Visibility = onboarding ? Visibility.Collapsed : Visibility.Visible;
+        SendLabel.Visibility = onboarding ? Visibility.Visible : Visibility.Collapsed;
+        SendButton.Width = onboarding ? 84 : 32;
+    }
+
+    void UnlockOverflow()
+    {
+        if (_settings.Current.OverflowUnlocked) return;
+        _settings.Current.OverflowUnlocked = true;
+        _settings.Save();
+        UpdateOverflowAvailability();
+        SetMode(_expanded, persist: false);
     }
 
     void Expand(object sender, RoutedEventArgs e) => SetMode(true);
@@ -192,15 +219,31 @@ public partial class MainWindow : Window
     }
     void UpdatePin()
     {
-        PinButton.SetResourceReference(Button.BackgroundProperty, Topmost ? "Brush.AccentSubtle" : "Brush.Canvas");
+        PinButton.Background = System.Windows.Media.Brushes.Transparent;
+        PinIcon.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, Topmost ? "Brush.AccentText" : "Brush.TextSecondary");
         PinButton.ToolTip = Topmost ? "Unpin FlickVox" : "Keep FlickVox on top";
+        System.Windows.Automation.AutomationProperties.SetName(PinButton, Topmost ? "Unpin FlickVox" : "Keep FlickVox on top");
     }
     void Drag(object sender, MouseButtonEventArgs e)
     {
         if (e.LeftButton != MouseButtonState.Pressed) return;
+        if (ReferenceEquals(sender, DragGrip) && e.ClickCount == 2 && !_expanded)
+        {
+            SetMode(true);
+            e.Handled = true;
+            return;
+        }
         DragMove();
         SavePosition();
         e.Handled = true;
+    }
+    void DragGripKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key is Key.Enter or Key.Space && !_expanded)
+        {
+            SetMode(true);
+            e.Handled = true;
+        }
     }
 
     void PlaceOnVisibleMonitor(Screen foreground)
@@ -255,16 +298,18 @@ public partial class MainWindow : Window
     {
         if (!DependenciesReady())
         {
-            ShowNotice("Piper or the selected voice is missing.", true);
+            if (OnboardingPrompt.Visibility == Visibility.Visible)
+            {
+                NoticeText.Text = "";
+                Notice.Visibility = Visibility.Collapsed;
+                if (_expanded) Height = ExpandedContentHeight();
+            }
+            else ShowNotice("Piper or the selected voice is missing.", true);
             return;
         }
-        if (!_settings.Current.FirstSpeechConfirmed && !_settings.Current.FirstRunGuidanceDismissed)
-        {
-            NoticeText.Text = "Ready for a first audio test.";
-            NoticeAction.Visibility = Visibility.Visible;
-            if (_expanded) Notice.Visibility = Visibility.Visible;
-        }
-        else { NoticeText.Text = ""; Notice.Visibility = Visibility.Collapsed; }
+        NoticeText.Text = "";
+        Notice.Visibility = Visibility.Collapsed;
+        UpdateOverflowAvailability();
         if (_expanded) Height = ExpandedContentHeight();
         SetUiState(string.IsNullOrEmpty(Input.Text) ? UiState.Idle : UiState.Typing);
     }
@@ -290,6 +335,7 @@ public partial class MainWindow : Window
             _ => "Brush.StrokeControl"
         });
         SendIcon.Data = (Geometry)FindResource(_busy ? "Icon.Stop" : "Icon.Send");
+        SendLabel.Text = _busy ? "Stop" : "Speak";
         SendButton.SetResourceReference(Button.BackgroundProperty, state switch
         {
             UiState.Speaking => "Brush.Canvas",
@@ -308,6 +354,7 @@ public partial class MainWindow : Window
     }
     void UpdateStatusIndicator(UiState state)
     {
+        StatusIndicator.Visibility = state is UiState.Preparing or UiState.Speaking ? Visibility.Visible : Visibility.Collapsed;
         var bars = new[] { StatusBar1, StatusBar2, StatusBar3 };
         var key = state switch
         {
@@ -335,7 +382,7 @@ public partial class MainWindow : Window
         }
         StatusIndicator.ToolTip = StatusText.Text;
         AutomationProperties.SetName(StatusIndicator, StatusText.Text);
-        var peer = UIElementAutomationPeer.FromElement(StatusIndicator) ?? UIElementAutomationPeer.CreatePeerForElement(StatusIndicator);
+        var peer = UIElementAutomationPeer.FromElement(StatusText) ?? UIElementAutomationPeer.CreatePeerForElement(StatusText);
         peer?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
     }
     void ShowNotice(string message, bool setupAction)
@@ -392,7 +439,11 @@ public partial class MainWindow : Window
                 if (version != _speechVersion) return;
                 SetUiState(s switch { "Speaking" => UiState.Speaking, "Ready" => string.IsNullOrEmpty(Input.Text) ? UiState.Idle : UiState.Typing, _ => UiState.Preparing });
             }));
-            if (version == _speechVersion && hideQuickPill && !IsVisible) Input.Clear();
+            if (version == _speechVersion)
+            {
+                UnlockOverflow();
+                if (hideQuickPill && !IsVisible) Input.Clear();
+            }
         }
         catch (OperationCanceledException) { if (version == _speechVersion) SetUiState(UiState.Typing); }
         catch (Exception ex) { if (version == _speechVersion) ShowNotice(ex.Message, !DependenciesReady()); }
@@ -402,7 +453,11 @@ public partial class MainWindow : Window
                 SetUiState(string.IsNullOrEmpty(Input.Text) ? UiState.Idle : UiState.Typing);
         }
     }
-    async void Repeat(object sender, RoutedEventArgs e) => await RepeatAsync();
+    async void Repeat(object sender, RoutedEventArgs e)
+    {
+        OverflowPopup.IsOpen = false;
+        await RepeatAsync();
+    }
     async Task RepeatAsync()
     {
         if (_speech.LastText is null) return;
@@ -422,7 +477,7 @@ public partial class MainWindow : Window
     }
     async void Preview(object sender, RoutedEventArgs e)
     {
-        VoiceFlyout.IsOpen = false;
+        OverflowPopup.IsOpen = false;
         var version = ++_speechVersion;
         SetUiState(UiState.Preparing);
         try
@@ -482,10 +537,14 @@ public partial class MainWindow : Window
         }
         if (key == Key.Escape)
         {
-            if (VoiceFlyout.IsOpen || OutputFlyout.IsOpen || SpeedFlyout.IsOpen || HistoryPopup.IsOpen)
-                VoiceFlyout.IsOpen = OutputFlyout.IsOpen = SpeedFlyout.IsOpen = HistoryPopup.IsOpen = false;
+            if (OverflowPopup.IsOpen) OverflowPopup.IsOpen = false;
             else if (_busy) StopSpeech();
             else { SavePosition(); Hide(); }
+            e.Handled = true;
+        }
+        else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && key == Key.E)
+        {
+            SetMode(!_expanded);
             e.Handled = true;
         }
         else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && key == Key.S) { SavePhrase(sender, e); e.Handled = true; }
@@ -498,10 +557,11 @@ public partial class MainWindow : Window
         PhraseChips.ItemsSource = _phrases.Items.Select((p, i) =>
             new PhraseChip(p, i < 9 ? (i + 1).ToString() : "", p.Name,
                 i < 9 ? $"{p.Name}\n{p.Text}\nAlt+{i + 1} · Right-click to edit or delete" : $"{p.Name}\n{p.Text}\nRight-click to edit or delete")).ToList();
-        if (_expanded) Height = ExpandedContentHeight();
+        SavedEmpty.Visibility = _phrases.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
     void PlayPhraseText(SavedPhrase phrase)
     {
+        OverflowPopup.IsOpen = false;
         Input.Text = phrase.Text;
         _ = SpeakAsync(phrase.Text);
     }
@@ -519,6 +579,7 @@ public partial class MainWindow : Window
     void SavePhrase(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(Input.Text)) return;
+        OverflowPopup.IsOpen = false;
         var text = Input.Text.Trim();
         var title = text.Length > 32 ? text[..32] + "…" : text;
         var editor = new PhraseEditorWindow(title, text) { Owner = this };
@@ -527,21 +588,22 @@ public partial class MainWindow : Window
     void EditPhrase(object sender, RoutedEventArgs e)
     {
         if (PhraseFromSender(sender) is not { } phrase) return;
+        OverflowPopup.IsOpen = false;
         var editor = new PhraseEditorWindow(phrase.Name, phrase.Text) { Owner = this };
         if (editor.ShowDialog() == true) _phrases.Update(phrase, editor.PhraseTitle, editor.PhraseBody);
     }
     void DeletePhrase(object sender, RoutedEventArgs e)
     {
         if (PhraseFromSender(sender) is not { } phrase) return;
+        OverflowPopup.IsOpen = false;
         if (MessageBox.Show(this, $"Delete the saved phrase \"{phrase.Name}\"?", "Delete phrase",
                 MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
             _phrases.Delete(phrase);
     }
-    void ToggleHistory(object sender, RoutedEventArgs e) => HistoryPopup.IsOpen = !HistoryPopup.IsOpen;
     void PlayHistory(object sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: string text }) return;
-        HistoryPopup.IsOpen = false;
+        OverflowPopup.IsOpen = false;
         Input.Text = text;
         _ = SpeakAsync(text);
     }
@@ -554,49 +616,55 @@ public partial class MainWindow : Window
     {
         if (Voice.SelectedItem is not VoiceOption option || VoiceValue is null) return;
         VoiceValue.Text = option.Label;
-        VoiceChip.ToolTip = option.Voice.DisplayName;
         if (!_uiReady) return;
         _settings.Current.VoiceId = option.Voice.Id;
         _settings.Save();
-        VoiceFlyout.IsOpen = false;
         if (IsLoaded) CheckReadiness();
     }
     void OutputChanged(object sender, SelectionChangedEventArgs e)
     {
         if (OutputValue is null || Output.SelectedIndex < 0) return;
         OutputValue.Text = Output.SelectedIndex == 0 ? "Default" : Output.SelectedItem?.ToString() ?? "Default";
-        OutputChip.ToolTip = Output.SelectedItem?.ToString();
         if (!_uiReady) return;
         _settings.Current.OutputDevice = Output.SelectedIndex - 1;
         _settings.Save();
-        OutputFlyout.IsOpen = false;
     }
     void SpeedChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         if (SpeedValue is null) return;
         SpeedValue.Text = $"{Speed.Value:F2}×";
-        if (SpeedFlyoutValue is not null) SpeedFlyoutValue.Text = SpeedValue.Text;
         if (!_uiReady) return;
         _settings.Current.Speed = Speed.Value;
         _settings.Save();
     }
-    void ToggleVoiceFlyout(object sender, RoutedEventArgs e) => VoiceFlyout.IsOpen = !VoiceFlyout.IsOpen;
-    void ToggleOutputFlyout(object sender, RoutedEventArgs e) => OutputFlyout.IsOpen = !OutputFlyout.IsOpen;
-    void ToggleSpeedFlyout(object sender, RoutedEventArgs e) => SpeedFlyout.IsOpen = !SpeedFlyout.IsOpen;
-    void FlyoutOpened(object sender, EventArgs e)
+    void ToggleOverflow(object sender, RoutedEventArgs e) => OverflowPopup.IsOpen = !OverflowPopup.IsOpen;
+    void ToggleOverflowSection(object sender, RoutedEventArgs e)
     {
-        if (sender is not Popup opened) return;
-        foreach (var popup in new[] { VoiceFlyout, OutputFlyout, SpeedFlyout })
-            if (!ReferenceEquals(popup, opened)) popup.IsOpen = false;
-        HistoryPopup.IsOpen = false;
-        if (ReferenceEquals(opened, VoiceFlyout)) Voice.Focus();
-        else if (ReferenceEquals(opened, OutputFlyout)) Output.Focus();
-        else Speed.Focus();
+        if (sender is not Button { Tag: string section }) return;
+        var panels = new[] { VoiceSection, SpeedSection, OutputSection, SavedSection };
+        var target = section switch
+        {
+            "Voice" => VoiceSection,
+            "Speed" => SpeedSection,
+            "Output" => OutputSection,
+            "Saved" => SavedSection,
+            _ => null
+        };
+        if (target is null) return;
+        var show = target.Visibility != Visibility.Visible;
+        foreach (var panel in panels) panel.Visibility = show && ReferenceEquals(panel, target) ? Visibility.Visible : Visibility.Collapsed;
+    }
+    void OverflowOpened(object sender, EventArgs e)
+    {
+        var area = Screen.FromHandle(new WindowInteropHelper(this).Handle).WorkingArea;
+        var dpi = VisualTreeHelper.GetDpi(this);
+        OverflowScroll.MaxHeight = Math.Min(430, Math.Max(160, area.Height / dpi.DpiScaleY - 64));
+        VoiceSectionButton.Focus();
     }
 
     void OpenVoiceManager(object sender, RoutedEventArgs e)
     {
-        VoiceFlyout.IsOpen = false;
+        OverflowPopup.IsOpen = false;
         new VoiceManagerWindow(_voices) { Owner = this }.ShowDialog();
         _settings.Load();
         SelectCurrentVoice();
@@ -604,6 +672,7 @@ public partial class MainWindow : Window
     }
     void OpenSetup(object sender, RoutedEventArgs e)
     {
+        OverflowPopup.IsOpen = false;
         new SetupWindow(_voices, _settings, _hotkey, _history, _speech) { Owner = this }.ShowDialog();
         _settings.Load();
         SelectCurrentVoice();
@@ -611,7 +680,8 @@ public partial class MainWindow : Window
     }
     void OpenSettings(object sender, RoutedEventArgs e)
     {
-        new SettingsWindow(_settings, _voices, _hotkey, _history) { Owner = this }.ShowDialog();
+        OverflowPopup.IsOpen = false;
+        new SettingsWindow(_settings, _voices, _hotkey, _history, OpenToolsFromSettings) { Owner = this }.ShowDialog();
         ApplyComposerTypography();
         SelectCurrentVoice();
         Speed.Value = _settings.Current.Speed;
@@ -621,6 +691,12 @@ public partial class MainWindow : Window
         SetMode(_expanded, persist: false);
         CheckReadiness();
     }
+    void OpenToolsFromSettings() => Dispatcher.BeginInvoke(() =>
+    {
+        ShowWorkspace();
+        OverflowPopup.PlacementTarget = OverflowButton.IsVisible ? OverflowButton : ComposerCard;
+        OverflowPopup.IsOpen = true;
+    });
     void ApplyComposerTypography()
     {
         Input.FontSize = Math.Clamp(_settings.Current.ComposerFontSize, 14, 40);

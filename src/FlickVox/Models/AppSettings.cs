@@ -23,6 +23,8 @@ public sealed class AppSettings
     public double UnifiedExpandedWidth { get; set; } = 410;
     public double UnifiedExpandedHeight { get; set; } = 300;
     public bool FirstSpeechConfirmed { get; set; }
+    public bool OverflowUnlocked { get; set; }
+    public bool OnboardingMigrationComplete { get; set; } = true;
     public bool FirstRunGuidanceDismissed { get; set; }
     public bool HideOverlayAfterSpeaking { get; set; } = true;
     public bool AlwaysOnTop { get; set; } = true;

@@ -81,8 +81,7 @@ internal static class ThemeManager
         var text = dark ? Color.FromRgb(0xEC, 0xEC, 0xF5) : Color.FromRgb(0x1B, 0x1B, 0x27);
         if (highContrast) text = Colors.White;
         var secondary = EnsureContrast(dark ? Color.FromRgb(0xB9, 0xBA, 0xCA) : Color.FromRgb(0x4D, 0x4B, 0x59), surface, 4.5);
-        var tertiary = EnsureContrast(dark ? Color.FromRgb(0xA1, 0xA3, 0xB7) : Color.FromRgb(0x61, 0x5E, 0x6D), surface, 4.5);
-        if (highContrast) secondary = tertiary = Colors.White;
+        if (highContrast) secondary = Colors.White;
         var onAccent = Contrast(Colors.White, accent) >= Contrast(Colors.Black, accent) ? Colors.White : Colors.Black;
         var accentText = EnsureContrast(accent, surface, 4.5);
         var stroke = highContrast ? Colors.White : EnsureContrast(Blend(surface, text, dark ? .32 : .4), surface, 3);
@@ -96,7 +95,7 @@ internal static class ThemeManager
         void Add(string key, Color color) => resources[key] = new SolidColorBrush(color);
         Add("Brush.Canvas", background); Add("Brush.Surface", surface); Add("Brush.SurfaceRaised", raised);
         Add("Brush.SurfaceHover", hover); Add("Brush.Text", text); Add("Brush.TextSecondary", secondary);
-        Add("Brush.TextTertiary", tertiary); Add("Brush.StrokeControl", stroke); Add("Brush.StrokeSubtle", subtle);
+        Add("Brush.TextTertiary", secondary); Add("Brush.StrokeControl", stroke); Add("Brush.StrokeSubtle", subtle);
         Add("Brush.Accent", accent); Add("Brush.AccentHover", accentHover); Add("Brush.AccentPressed", accentPressed);
         Add("Brush.AccentText", accentText); Add("Brush.PrimaryAction", accent); Add("Brush.OnPrimary", onAccent);
         Add("Brush.Signal", accent); Add("Brush.SignalBorder", accent); Add("Brush.Danger", danger); Add("Brush.Warning", warning);

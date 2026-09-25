@@ -1,15 +1,22 @@
 <Window x:Class="FlickVox.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="FlickVox" Icon="Assets/FlickVox.ico" Width="410" Height="300" MinWidth="320" MinHeight="48"
+        Title="FlickVox" Icon="Assets/FlickVox.ico" Width="410" Height="145" MinWidth="320" MinHeight="48"
         WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True" Background="Transparent"
         WindowStartupLocation="Manual" PreviewKeyDown="WindowPreviewKeyDown"
         Foreground="{DynamicResource Brush.Text}" TextElement.Foreground="{DynamicResource Brush.Text}"
         FontFamily="{StaticResource Font.UI}" UseLayoutRounding="True" SnapsToDevicePixels="True">
   <Window.Resources>
-    <Style x:Key="QuietFooterButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
-      <Setter Property="Height" Value="27"/><Setter Property="Padding" Value="7,0"/>
-      <Setter Property="FontSize" Value="11"/>
+    <Style x:Key="MenuActionButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
+      <Setter Property="Height" Value="32"/><Setter Property="Padding" Value="8,0"/>
+      <Setter Property="FontSize" Value="12"/>
+    </Style>
+    <Style x:Key="MenuSectionButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+      <Setter Property="Height" Value="34"/><Setter Property="Padding" Value="8,0"/>
+      <Setter Property="HorizontalContentAlignment" Value="Left"/>
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.StrokeSubtle}"/>
+      <Setter Property="FontSize" Value="12"/>
     </Style>
     <Style x:Key="PhraseChipButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
       <Setter Property="Height" Value="28"/><Setter Property="Padding" Value="9,0"/><Setter Property="FontWeight" Value="Normal"/>
@@ -18,8 +25,8 @@
     <Style x:Key="SendActionButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
         <Grid>
-          <Border x:Name="Focus" Margin="-3" CornerRadius="19" BorderBrush="Transparent" BorderThickness="2"/>
-          <Border x:Name="Body" CornerRadius="16" Background="{TemplateBinding Background}"
+          <Border x:Name="Focus" Margin="-3" CornerRadius="10" BorderBrush="Transparent" BorderThickness="2"/>
+          <Border x:Name="Body" CornerRadius="8" Background="{TemplateBinding Background}"
                   BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
           </Border>
@@ -32,42 +39,113 @@
       </ControlTemplate></Setter.Value></Setter>
     </Style>
   </Window.Resources>
-  <Border x:Name="Shell" CornerRadius="14" Background="{DynamicResource Brush.Canvas}"
+  <Border x:Name="Shell" CornerRadius="10" Background="{DynamicResource Brush.Canvas}"
           BorderBrush="{DynamicResource Brush.StrokeControl}" BorderThickness="1">
     <Grid>
-      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
 
       <Grid x:Name="Header" Height="34" Grid.Row="0" Background="Transparent" MouseLeftButtonDown="Drag">
         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="11,0,0,0">
+        <StackPanel x:Name="BrandBlock" Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0">
           <Image Source="Assets/Branding/flickvox-icon.png" Width="20" Height="20" Stretch="Uniform" Margin="0,0,5,0"/>
           <TextBlock Text="FlickVox" FontFamily="{StaticResource Font.Brand}" FontSize="13" VerticalAlignment="Center"/>
         </StackPanel>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,5,0">
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,14,0">
+          <Grid>
+            <Button x:Name="OverflowButton" Style="{StaticResource IconButton}" Width="28" Height="28" Click="ToggleOverflow"
+                    Visibility="Collapsed" ToolTip="More speech controls" AutomationProperties.Name="More speech controls">
+              <Path Data="{StaticResource Icon.MoreHorizontal}" Fill="{DynamicResource Brush.TextSecondary}" Width="16" Height="16" Stretch="Uniform"/>
+            </Button>
+            <Popup x:Name="OverflowPopup" PlacementTarget="{Binding ElementName=OverflowButton}" Placement="Bottom"
+                   HorizontalOffset="-8" VerticalOffset="3" StaysOpen="False" AllowsTransparency="True" Opened="OverflowOpened">
+              <Border Style="{StaticResource Flyout}" Width="290" Padding="16">
+                <ScrollViewer x:Name="OverflowScroll" MaxHeight="430" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                  <StackPanel>
+                    <TextBlock Text="Speech controls" Style="{StaticResource SectionTitle}" Margin="0,0,0,8"/>
+                    <Button x:Name="VoiceSectionButton" Content="Voice" Tag="Voice" Click="ToggleOverflowSection"
+                            Style="{StaticResource MenuSectionButton}" ToolTip="Choose or preview a voice"/>
+                    <StackPanel x:Name="VoiceSection" Visibility="Collapsed" Margin="8,8,0,8">
+                      <TextBlock x:Name="VoiceValue" Text="Voice" FontSize="11" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,4"/>
+                      <ListBox x:Name="Voice" DisplayMemberPath="Label" SelectionChanged="VoiceChanged" AutomationProperties.Name="Voice"/>
+                      <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Content="Preview" Click="Preview" Style="{StaticResource MenuActionButton}" ToolTip="Preview selected voice"/>
+                        <Button Content="Manage voices" Click="OpenVoiceManager" Style="{StaticResource MenuActionButton}" Margin="8,0,0,0"/>
+                      </StackPanel>
+                    </StackPanel>
+                    <Button Content="Speed" Tag="Speed" Click="ToggleOverflowSection" Style="{StaticResource MenuSectionButton}" Margin="0,8,0,0" ToolTip="Adjust speech speed"/>
+                    <StackPanel x:Name="SpeedSection" Visibility="Collapsed" Margin="8,8,0,8">
+                      <Slider x:Name="Speed" Minimum="0.6" Maximum="1.8" ValueChanged="SpeedChanged" AutomationProperties.Name="Speech speed"/>
+                      <TextBlock x:Name="SpeedValue" Text="1.00×" HorizontalAlignment="Right" FontSize="11" Foreground="{DynamicResource Brush.TextSecondary}"/>
+                    </StackPanel>
+                    <Button Content="Output device" Tag="Output" Click="ToggleOverflowSection" Style="{StaticResource MenuSectionButton}" Margin="0,8,0,0" ToolTip="Choose an audio output device"/>
+                    <StackPanel x:Name="OutputSection" Visibility="Collapsed" Margin="8,8,0,8">
+                      <TextBlock x:Name="OutputValue" Text="Default" FontSize="11" Foreground="{DynamicResource Brush.TextSecondary}" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
+                      <ListBox x:Name="Output" SelectionChanged="OutputChanged" AutomationProperties.Name="Output device">
+                        <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" MaxWidth="230" ToolTip="{Binding}"/></DataTemplate></ListBox.ItemTemplate>
+                      </ListBox>
+                    </StackPanel>
+                    <Button Content="Saved phrases" Tag="Saved" Click="ToggleOverflowSection" Style="{StaticResource MenuSectionButton}" Margin="0,8,0,0"
+                            ToolTip="Saved phrases, recent messages and Save current"/>
+                    <StackPanel x:Name="SavedSection" Visibility="Collapsed" Margin="8,8,0,8">
+                      <Button x:Name="SaveButton" Content="Save current · Ctrl+S" Click="SavePhrase" Style="{StaticResource MenuActionButton}" IsEnabled="False"
+                              ToolTip="Save current phrase · Ctrl+S" AutomationProperties.Name="Save current phrase" HorizontalAlignment="Left" Margin="0,0,0,8"/>
+                      <TextBlock x:Name="SavedEmpty" Text="No saved phrases yet." Foreground="{DynamicResource Brush.TextSecondary}" FontSize="12" Margin="0,0,0,8"/>
+                      <ItemsControl x:Name="PhraseChips">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate><DataTemplate>
+                          <Button Style="{StaticResource PhraseChipButton}" Tag="{Binding Phrase}" Click="PlayPhrase"
+                                  ToolTip="{Binding Hint}" Margin="0,0,6,6" MaxWidth="240">
+                            <Button.ContextMenu><ContextMenu>
+                              <MenuItem Header="Speak" Tag="{Binding PlacementTarget.Tag,RelativeSource={RelativeSource AncestorType=ContextMenu}}" Click="PlayPhrase"/>
+                              <MenuItem Header="Edit or rename" Tag="{Binding PlacementTarget.Tag,RelativeSource={RelativeSource AncestorType=ContextMenu}}" Click="EditPhrase"/>
+                              <MenuItem Header="Delete" Tag="{Binding PlacementTarget.Tag,RelativeSource={RelativeSource AncestorType=ContextMenu}}" Click="DeletePhrase"/>
+                            </ContextMenu></Button.ContextMenu>
+                            <StackPanel Orientation="Horizontal">
+                              <TextBlock Text="{Binding Shortcut}" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,5,0" MinWidth="9"/>
+                              <TextBlock Text="{Binding Name}" MaxWidth="195" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                            </StackPanel>
+                          </Button>
+                        </DataTemplate></ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <TextBlock Text="Recent messages" Style="{StaticResource FieldLabel}" Margin="0,8,0,5"/>
+                      <TextBlock x:Name="RecentEmpty" Text="Messages you speak will appear here." Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" FontSize="12"/>
+                      <ItemsControl x:Name="History" AutomationProperties.Name="Recent messages">
+                      <ItemsControl.ItemTemplate><DataTemplate><Grid Margin="0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding}" ToolTip="{Binding}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Content="Play" Tag="{Binding}" Click="PlayHistory" Height="28" Padding="8,0"/>
+                      </Grid></DataTemplate></ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                    <Button x:Name="RepeatButton" Content="Repeat last message · Ctrl+R" Click="Repeat" Style="{StaticResource MenuSectionButton}" IsEnabled="False"
+                            ToolTip="Repeat last message · Ctrl+R" AutomationProperties.Name="Repeat last message" Margin="0,8,0,0"/>
+                  </StackPanel>
+                </ScrollViewer>
+              </Border>
+            </Popup>
+          </Grid>
           <Button x:Name="PinButton" Style="{StaticResource IconButton}" Width="28" Height="28" Click="TogglePin" ToolTip="Keep on top" AutomationProperties.Name="Keep on top">
-            <Path Data="{StaticResource Icon.Pin}" Fill="{DynamicResource Brush.TextSecondary}" Width="15" Height="15" Stretch="Uniform"/>
+            <Path x:Name="PinIcon" Data="{StaticResource Icon.Pin}" Fill="{DynamicResource Brush.TextSecondary}" Width="16" Height="16" Stretch="Uniform"/>
           </Button>
-          <Button Style="{StaticResource IconButton}" Width="28" Height="28" Click="OpenSettings" ToolTip="Settings" AutomationProperties.Name="Settings">
-            <Path Data="{StaticResource Icon.Settings}" Fill="{DynamicResource Brush.TextSecondary}" Width="15" Height="15" Stretch="Uniform"/>
+          <Button x:Name="SettingsButton" Style="{StaticResource IconButton}" Width="28" Height="28" Click="OpenSettings" ToolTip="Settings and audio configuration" AutomationProperties.Name="Settings and audio configuration">
+            <Path Data="{StaticResource Icon.Settings}" Fill="{DynamicResource Brush.TextSecondary}" Width="16" Height="16" Stretch="Uniform"/>
           </Button>
-          <Button Style="{StaticResource IconButton}" Width="28" Height="28" Click="Collapse" ToolTip="Collapse to quick pill" AutomationProperties.Name="Collapse to quick pill">
-            <Path Data="{StaticResource Icon.ChevronDown}" Fill="{DynamicResource Brush.TextSecondary}" Width="14" Height="14" Stretch="Uniform"/>
+          <Button x:Name="CollapseButton" Style="{StaticResource IconButton}" Width="28" Height="28" Click="Collapse" ToolTip="Collapse to quick pill" AutomationProperties.Name="Collapse to quick pill">
+            <Path Data="{StaticResource Icon.ChevronDown}" Fill="{DynamicResource Brush.TextSecondary}" Width="16" Height="16" Stretch="Uniform"/>
           </Button>
-          <Button Style="{StaticResource IconButton}" Width="28" Height="28" Click="CloseToTray" ToolTip="Close to tray" AutomationProperties.Name="Close to tray">
-            <Path Data="{StaticResource Icon.Dismiss}" Fill="{DynamicResource Brush.TextSecondary}" Width="14" Height="14" Stretch="Uniform"/>
+          <Button x:Name="CloseButton" Style="{StaticResource IconButton}" Width="28" Height="28" Click="CloseToTray" ToolTip="Close to tray" AutomationProperties.Name="Close to tray">
+            <Path Data="{StaticResource Icon.Dismiss}" Fill="{DynamicResource Brush.TextSecondary}" Width="16" Height="16" Stretch="Uniform"/>
           </Button>
         </StackPanel>
       </Grid>
 
-      <Border x:Name="ComposerCard" Grid.Row="1" Height="84" Margin="12,5,12,7" CornerRadius="10"
+      <Border x:Name="ComposerCard" Grid.Row="1" Height="84" Margin="14,8,14,8" CornerRadius="10"
               Background="{DynamicResource Brush.SurfaceRaised}" BorderBrush="{DynamicResource Brush.StrokeControl}" BorderThickness="1">
         <Grid Margin="8,5">
-          <Grid.ColumnDefinitions><ColumnDefinition Width="18"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-          <Border x:Name="DragGrip" Width="17" Background="Transparent" MouseLeftButtonDown="Drag" ToolTip="Drag FlickVox" VerticalAlignment="Stretch">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-              <StackPanel><Ellipse Width="2.5" Height="2.5" Fill="{DynamicResource Brush.TextTertiary}" Margin="1.5"/><Ellipse Width="2.5" Height="2.5" Fill="{DynamicResource Brush.TextTertiary}" Margin="1.5"/></StackPanel>
-              <StackPanel><Ellipse Width="2.5" Height="2.5" Fill="{DynamicResource Brush.TextTertiary}" Margin="1.5"/><Ellipse Width="2.5" Height="2.5" Fill="{DynamicResource Brush.TextTertiary}" Margin="1.5"/></StackPanel>
-            </StackPanel>
+          <Grid.ColumnDefinitions><ColumnDefinition Width="18"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+          <Border x:Name="DragGrip" Width="17" Background="Transparent" MouseLeftButtonDown="Drag" KeyDown="DragGripKeyDown" Focusable="True"
+                  ToolTip="Drag FlickVox · double-click or Ctrl+E to expand" AutomationProperties.Name="Drag FlickVox; press Enter to expand" VerticalAlignment="Stretch">
+            <Path Data="{StaticResource Icon.Grip}" Fill="{DynamicResource Brush.TextSecondary}" Width="16" Height="16" Stretch="Uniform"
+                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
           </Border>
           <Grid Grid.Column="1" Margin="5,0,4,0" MinWidth="0">
             <TextBox x:Name="Input" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
@@ -76,124 +154,37 @@
             <TextBlock x:Name="InputPlaceholder" Text="Type, press Enter to speak" FontSize="14"
                        Foreground="{DynamicResource Brush.TextTertiary}" VerticalAlignment="Center" IsHitTestVisible="False" TextTrimming="CharacterEllipsis"/>
           </Grid>
-          <Button x:Name="SaveButton" Grid.Column="2" Style="{StaticResource IconButton}" Width="28" Height="28" IsEnabled="False"
-                  Click="SavePhrase" ToolTip="Save current phrase · Ctrl+S" AutomationProperties.Name="Save current phrase">
-            <Path Data="{StaticResource Icon.Star}" Fill="{DynamicResource Brush.TextSecondary}" Width="16" Height="16" Stretch="Uniform"/>
-          </Button>
-          <Button x:Name="ExpandQuickButton" Grid.Column="3" Style="{StaticResource IconButton}" Width="25" Height="25"
-                  Click="Expand" ToolTip="Expand FlickVox" AutomationProperties.Name="Expand FlickVox">
-            <Path Data="{StaticResource Icon.Open}" Fill="{DynamicResource Brush.TextSecondary}" Width="14" Height="14" Stretch="Uniform"/>
-          </Button>
-          <StackPanel x:Name="StatusIndicator" Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0"
-                      ToolTip="Idle" AutomationProperties.Name="Idle" AutomationProperties.LiveSetting="Polite">
+          <StackPanel x:Name="StatusIndicator" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0"
+                      Visibility="Collapsed" ToolTip="Preparing" AutomationProperties.Name="Preparing">
             <Border x:Name="StatusBar1" Width="2" Height="4" CornerRadius="1" Background="{DynamicResource Brush.TextTertiary}" Margin="1,0" VerticalAlignment="Center"/>
             <Border x:Name="StatusBar2" Width="2" Height="7" CornerRadius="1" Background="{DynamicResource Brush.TextTertiary}" Margin="1,0" VerticalAlignment="Center"/>
             <Border x:Name="StatusBar3" Width="2" Height="4" CornerRadius="1" Background="{DynamicResource Brush.TextTertiary}" Margin="1,0" VerticalAlignment="Center"/>
-            <TextBlock x:Name="StatusText" Text="Idle" Width="0" Height="0" Opacity="0" AutomationProperties.LiveSetting="Polite"/>
           </StackPanel>
-          <Button x:Name="SendButton" Grid.Column="5" Style="{StaticResource SendActionButton}" Width="32" Height="32" Padding="0" Click="SendOrStop"
+          <TextBlock x:Name="StatusText" Grid.Column="2" Text="Idle" Width="0" Height="0" Opacity="0" AutomationProperties.LiveSetting="Polite"/>
+          <Button x:Name="SendButton" Grid.Column="3" Style="{StaticResource SendActionButton}" Width="32" Height="32" Padding="0" Click="SendOrStop"
                   Background="{DynamicResource Brush.PrimaryAction}" BorderBrush="{DynamicResource Brush.PrimaryAction}"
                   ToolTip="Speak · Enter" AutomationProperties.Name="Speak">
-            <Path x:Name="SendIcon" Data="{StaticResource Icon.Send}" Fill="{DynamicResource Brush.OnPrimary}" Width="17" Height="17" Stretch="Uniform"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+              <Path x:Name="SendIcon" Data="{StaticResource Icon.Send}" Fill="{DynamicResource Brush.OnPrimary}" Width="16" Height="16" Stretch="Uniform"/>
+              <TextBlock x:Name="SendLabel" Text="Speak" Foreground="{DynamicResource Brush.OnPrimary}" FontSize="12" FontWeight="SemiBold" Margin="6,0,0,0" Visibility="Collapsed" VerticalAlignment="Center"/>
+            </StackPanel>
           </Button>
         </Grid>
       </Border>
 
-      <StackPanel x:Name="SavedArea" Grid.Row="2" Margin="12,0,12,8">
-        <Grid Margin="0,0,0,6"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-          <TextBlock Text="Saved · Alt+1 to Alt+9" FontSize="11" Foreground="{DynamicResource Brush.TextTertiary}" VerticalAlignment="Center"/>
-          <Button Grid.Column="1" Style="{StaticResource QuietFooterButton}" Content="Repeat" Click="Repeat"
-                  x:Name="RepeatButton" IsEnabled="False" ToolTip="Repeat last message · Ctrl+R"/>
-        </Grid>
-        <ScrollViewer x:Name="PhraseListScroll" MaxHeight="95" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-          <StackPanel>
-            <ItemsControl x:Name="PhraseChips">
-              <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate><DataTemplate>
-                <Button Style="{StaticResource PhraseChipButton}" Tag="{Binding Phrase}" Click="PlayPhrase"
-                        ToolTip="{Binding Hint}" Margin="0,0,6,6" MaxWidth="184">
-                  <Button.ContextMenu><ContextMenu>
-                    <MenuItem Header="Speak" Tag="{Binding PlacementTarget.Tag,RelativeSource={RelativeSource AncestorType=ContextMenu}}" Click="PlayPhrase"/>
-                    <MenuItem Header="Edit or rename" Tag="{Binding PlacementTarget.Tag,RelativeSource={RelativeSource AncestorType=ContextMenu}}" Click="EditPhrase"/>
-                    <MenuItem Header="Delete" Tag="{Binding PlacementTarget.Tag,RelativeSource={RelativeSource AncestorType=ContextMenu}}" Click="DeletePhrase"/>
-                  </ContextMenu></Button.ContextMenu>
-                  <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{Binding Shortcut}" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,5,0" MinWidth="9"/>
-                    <TextBlock Text="{Binding Name}" MaxWidth="145" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
-                  </StackPanel>
-                </Button>
-              </DataTemplate></ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </StackPanel>
-        </ScrollViewer>
-      </StackPanel>
-
-      <Border x:Name="Footer" Grid.Row="3" BorderBrush="{DynamicResource Brush.StrokeSubtle}" BorderThickness="0,1,0,0" Padding="6,3">
+      <Border x:Name="OnboardingPrompt" Grid.Row="2" Visibility="Collapsed" BorderBrush="{DynamicResource Brush.StrokeSubtle}"
+              BorderThickness="0,1,0,0" Padding="14,8">
         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-          <StackPanel Orientation="Horizontal">
-            <Grid>
-              <Button x:Name="VoiceChip" Style="{StaticResource QuietFooterButton}" Click="ToggleVoiceFlyout" ToolTip="Choose voice">
-                <TextBlock x:Name="VoiceValue" Text="Voice" Width="106" TextTrimming="CharacterEllipsis"/>
-              </Button>
-              <Popup x:Name="VoiceFlyout" PlacementTarget="{Binding ElementName=VoiceChip}" Placement="Top" StaysOpen="False" AllowsTransparency="True" Opened="FlyoutOpened">
-                <Border Style="{StaticResource Flyout}" Width="255" Padding="12"><StackPanel>
-                  <TextBlock Text="Voice" Style="{StaticResource SectionTitle}" Margin="0,0,0,7"/>
-                  <ListBox x:Name="Voice" DisplayMemberPath="Label" SelectionChanged="VoiceChanged" MaxHeight="205" AutomationProperties.Name="Voice"/>
-                  <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                    <Button Content="Preview" Click="Preview" Height="30" Padding="9,0"/>
-                    <Button Content="Manage voices" Click="OpenVoiceManager" Height="30" Padding="9,0" Margin="5,0,0,0"/>
-                  </StackPanel>
-                </StackPanel></Border>
-              </Popup>
-            </Grid>
-            <Grid>
-              <Button x:Name="OutputChip" Style="{StaticResource QuietFooterButton}" Click="ToggleOutputFlyout" ToolTip="Choose output">
-                <TextBlock x:Name="OutputValue" Text="Default" Width="82" TextTrimming="CharacterEllipsis"/>
-              </Button>
-              <Popup x:Name="OutputFlyout" PlacementTarget="{Binding ElementName=OutputChip}" Placement="Top" StaysOpen="False" AllowsTransparency="True" Opened="FlyoutOpened">
-                <Border Style="{StaticResource Flyout}" Width="285" Padding="12"><StackPanel>
-                  <TextBlock Text="Output device" Style="{StaticResource SectionTitle}" Margin="0,0,0,7"/>
-                  <ListBox x:Name="Output" SelectionChanged="OutputChanged" MaxHeight="205" AutomationProperties.Name="Output device">
-                    <ListBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" MaxWidth="240" ToolTip="{Binding}"/></DataTemplate></ListBox.ItemTemplate>
-                  </ListBox>
-                </StackPanel></Border>
-              </Popup>
-            </Grid>
-            <Grid>
-              <Button x:Name="SpeedChip" Style="{StaticResource QuietFooterButton}" Click="ToggleSpeedFlyout" ToolTip="Adjust speed">
-                <TextBlock x:Name="SpeedValue" Text="1.00×"/>
-              </Button>
-              <Popup x:Name="SpeedFlyout" PlacementTarget="{Binding ElementName=SpeedChip}" Placement="Top" StaysOpen="False" AllowsTransparency="True" Opened="FlyoutOpened">
-                <Border Style="{StaticResource Flyout}" Width="230" Padding="12"><StackPanel>
-                  <TextBlock Text="Speech speed" Style="{StaticResource SectionTitle}" Margin="0,0,0,8"/>
-                  <Slider x:Name="Speed" Minimum="0.6" Maximum="1.8" ValueChanged="SpeedChanged" AutomationProperties.Name="Speech speed"/>
-                  <TextBlock x:Name="SpeedFlyoutValue" Text="1.00×" HorizontalAlignment="Right" Foreground="{DynamicResource Brush.TextSecondary}"/>
-                </StackPanel></Border>
-              </Popup>
-            </Grid>
-          </StackPanel>
-          <Grid Grid.Column="1">
-            <Button x:Name="HistoryButton" Style="{StaticResource IconButton}" Width="28" Height="27" Click="ToggleHistory"
-                    ToolTip="Recent messages" AutomationProperties.Name="Recent messages">
-              <Path Data="{StaticResource Icon.History}" Fill="{DynamicResource Brush.TextSecondary}" Width="16" Height="16" Stretch="Uniform"/>
-            </Button>
-            <Popup x:Name="HistoryPopup" PlacementTarget="{Binding ElementName=HistoryButton}" Placement="Top" StaysOpen="False" AllowsTransparency="True">
-              <Border Style="{StaticResource Flyout}" Width="285" Padding="12"><StackPanel>
-                <TextBlock Text="Recent messages" Style="{StaticResource SectionTitle}" Margin="0,0,0,7"/>
-                <TextBlock x:Name="RecentEmpty" Text="Messages you speak will appear here." Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap"/>
-                <ListBox x:Name="History" MaxHeight="180" AutomationProperties.Name="Recent messages">
-                  <ListBox.ItemTemplate><DataTemplate><Grid Margin="0,2"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <TextBlock Text="{Binding}" ToolTip="{Binding}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                    <Button Grid.Column="1" Content="Play" Tag="{Binding}" Click="PlayHistory" Height="28" Padding="8,0"/>
-                  </Grid></DataTemplate></ListBox.ItemTemplate>
-                </ListBox>
-              </StackPanel></Border>
-            </Popup>
-          </Grid>
+          <Button Content="Set up voices" Click="OpenSetup" Style="{StaticResource MenuActionButton}" HorizontalAlignment="Left"
+                  ToolTip="Install voices and configure audio" AutomationProperties.Name="Set up voices and audio"/>
+          <Button Grid.Column="1" Style="{StaticResource IconButton}" Width="28" Height="28" Click="CloseToTray"
+                  ToolTip="Close to tray" AutomationProperties.Name="Close to tray">
+            <Path Data="{StaticResource Icon.Dismiss}" Fill="{DynamicResource Brush.TextSecondary}" Width="16" Height="16" Stretch="Uniform"/>
+          </Button>
         </Grid>
       </Border>
 
-      <Border x:Name="Notice" Grid.Row="4" Visibility="Collapsed" BorderBrush="{DynamicResource Brush.StrokeSubtle}"
+      <Border x:Name="Notice" Grid.Row="3" Visibility="Collapsed" BorderBrush="{DynamicResource Brush.StrokeSubtle}"
               BorderThickness="0,1,0,0" Padding="8,4">
         <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
           <TextBlock x:Name="NoticeText" FontSize="11" Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap" VerticalAlignment="Center" MaxHeight="35"/>
