@@ -1,6 +1,7 @@
 using Microsoft.Win32;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Color = System.Windows.Media.Color;
 using Application = System.Windows.Application;
 
@@ -102,6 +103,8 @@ internal static class ThemeManager
         resources["Brush.AccentSubtle"] = new SolidColorBrush(Color.FromArgb(highContrast ? (byte)90 : (byte)42, accent.R, accent.G, accent.B));
         resources["Brush.SignalSubtle"] = resources["Brush.AccentSubtle"];
         resources["Brush.Selection"] = new SolidColorBrush(Color.FromArgb(105, accent.R, accent.G, accent.B));
+        var logo = highContrast ? "flickvox-ui-high-contrast.png" : dark ? "flickvox-ui-light.png" : "flickvox-ui-dark.png";
+        resources["Branding.Logo"] = new BitmapImage(new Uri($"pack://application:,,,/Assets/Branding/{logo}"));
         return resources;
     }
 

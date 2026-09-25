@@ -113,7 +113,7 @@
             </StackPanel>
             <StackPanel x:Name="AboutPanel" Visibility="Collapsed">
               <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                <Image Source="Assets/Branding/flickvox-icon.png" Width="32" Height="32" Stretch="Uniform"
+                <Image Source="{DynamicResource Branding.Logo}" Width="32" Height="32" Stretch="Uniform"
                        AutomationProperties.Name="FlickVox logo" Margin="0,0,8,0"/>
                 <TextBlock Text="FlickVox" FontFamily="{StaticResource Font.Brand}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
               </StackPanel>
