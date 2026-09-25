@@ -1,12 +1,13 @@
 using System.Collections.ObjectModel;
 using System.Text.Json;
+using FlickVox.Infrastructure;
 
 namespace FlickVox.Services;
 
 public sealed class HistoryService
 {
     readonly SettingsService _settings;
-    readonly string _path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FlickVox", "history.json");
+    readonly string _path = Path.Combine(AppDataPaths.Root, "history.json");
     public ObservableCollection<string> Items { get; } = [];
 
     public HistoryService(SettingsService settings)

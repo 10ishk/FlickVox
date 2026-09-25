@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using FlickVox.Infrastructure;
 
 namespace FlickVox.Services;
 
@@ -57,8 +58,7 @@ public sealed class PiperSpeechService
         var voice = _settings.Current.VoiceId;
         if (!_voices.IsInstalled(voice))
             throw new InvalidOperationException("The selected Piper voice is not installed. Download it from Voice Manager first.");
-        var piper = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "FlickVox", "runtime", "piper", "piper.exe");
+        var piper = Path.Combine(AppDataPaths.Runtime, "piper", "piper.exe");
         if (!File.Exists(piper))
             throw new FileNotFoundException("Piper runtime is not installed.", piper);
 

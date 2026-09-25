@@ -12,3 +12,12 @@ phrases.json
 *.pfx
 *.snk
 secrets.json
+history.json
+*.invalid-*
+*.tmp
+*.log
+*.zip
+*.sha256
+*.sha256.txt
+.env
+.env.*

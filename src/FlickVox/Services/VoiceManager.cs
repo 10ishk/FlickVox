@@ -1,4 +1,5 @@
 using FlickVox.Models;
+using FlickVox.Infrastructure;
 using System.Net.Http;
 namespace FlickVox.Services;
 public sealed class VoiceManager
@@ -10,7 +11,7 @@ public sealed class VoiceManager
     private readonly string _voices;
     public VoiceManager(string? voicesRoot = null)
     {
-        _voices = voicesRoot ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FlickVox", "runtime", "voices");
+        _voices = voicesRoot ?? Path.Combine(AppDataPaths.Runtime, "voices");
         Directory.CreateDirectory(_voices);
     }
     private static VoiceDefinition Voice(string id, string name, int mb) { var parts=id.Split('-'); var stem=$"en/en_US/{parts[1]}/{parts[2]}/{id}"; return new(id,name,mb*1024L*1024,$"{Base}/{stem}.onnx?download=true",$"{Base}/{stem}.onnx.json?download=true"); }
@@ -20,5 +21,30 @@ public sealed class VoiceManager
     {
       using var client = new HttpClient(); await DownloadFile(client, voice.ModelUrl, ModelPath(voice.Id), progress, ct); await DownloadFile(client, voice.ConfigUrl, ModelPath(voice.Id)+".json", null, ct);
     }
-    private static async Task DownloadFile(HttpClient client, string url, string target, IProgress<double>? progress, CancellationToken ct) { var tmp=target+".download"; try { using var r=await client.GetAsync(url,HttpCompletionOption.ResponseHeadersRead,ct); r.EnsureSuccessStatusCode(); await using var input=await r.Content.ReadAsStreamAsync(ct); await using var output=File.Create(tmp); var total=r.Content.Headers.ContentLength ?? 0L; var buffer=new byte[81920]; long done=0; int n; while((n=await input.ReadAsync(buffer,ct))>0){await output.WriteAsync(buffer.AsMemory(0,n),ct);done+=n;progress?.Report(total==0?0:(double)done/total);} if(new FileInfo(tmp).Length<1024) throw new InvalidDataException("Download is unexpectedly small."); File.Move(tmp,target,true); } finally { if(File.Exists(tmp)) File.Delete(tmp); } }
+    private static async Task DownloadFile(HttpClient client, string url, string target, IProgress<double>? progress, CancellationToken ct)
+    {
+        var tmp = target + ".download";
+        try
+        {
+            using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+            response.EnsureSuccessStatusCode();
+            await using (var input = await response.Content.ReadAsStreamAsync(ct))
+            await using (var output = File.Create(tmp))
+            {
+                var total = response.Content.Headers.ContentLength ?? 0L;
+                var buffer = new byte[81920];
+                long done = 0;
+                int count;
+                while ((count = await input.ReadAsync(buffer, ct)) > 0)
+                {
+                    await output.WriteAsync(buffer.AsMemory(0, count), ct);
+                    done += count;
+                    progress?.Report(total == 0 ? 0 : (double)done / total);
+                }
+            }
+            if (new FileInfo(tmp).Length < 1024) throw new InvalidDataException("Download is unexpectedly small.");
+            File.Move(tmp, target, true);
+        }
+        finally { if (File.Exists(tmp)) File.Delete(tmp); }
+    }
 }

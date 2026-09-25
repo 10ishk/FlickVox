@@ -7,6 +7,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Automation;
 using System.Windows.Automation.Peers;
 using FlickVox.Models;
+using FlickVox.Infrastructure;
 using FlickVox.Services;
 using NAudio.Wave;
 using Screen = System.Windows.Forms.Screen;
@@ -341,8 +342,7 @@ public partial class MainWindow : Window
     }
 
     bool DependenciesReady() =>
-        File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "FlickVox", "runtime", "piper", "piper.exe")) && _voices.IsInstalled(_settings.Current.VoiceId);
+        File.Exists(Path.Combine(AppDataPaths.Runtime, "piper", "piper.exe")) && _voices.IsInstalled(_settings.Current.VoiceId);
 
     void CheckReadiness()
     {

@@ -6,4 +6,4 @@ FlickVox uses eight palettes: Midnight Violet, Signal Green, Ember, Ocean, Neon 
 
 Accent buttons choose black or white text for the stronger contrast. Informational text is adjusted to at least 4.5:1 against the surface and essential control borders and focus indicators to at least 3:1. Hover and pressed accents move toward the color that increases contrast with button text. The UI's speaking waveform is a state animation, not an audio-level meter; it stops on cancellation/completion and is static when Windows client-area animation is disabled.
 
-The approved FlickVox image branding remains independent of the theme palettes. `docs/UI_UX_SPEC.md` is the original design specification and describes earlier theme examples; this file records the implemented current theme architecture.
+The approved FlickVox image branding remains independent of the theme palettes. This file records the implemented theme architecture.

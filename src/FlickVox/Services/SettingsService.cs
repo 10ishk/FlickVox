@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FlickVox.Models;
+using FlickVox.Infrastructure;
 namespace FlickVox.Services;
 public sealed class SettingsService
 {
@@ -13,7 +14,7 @@ public sealed class SettingsService
     public AppSettings Current { get; private set; } = new();
     public SettingsService(string? dataRoot = null)
     {
-        var root = dataRoot ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FlickVox");
+        var root = dataRoot ?? AppDataPaths.Root;
         Directory.CreateDirectory(root); _path = Path.Combine(root, "settings.json"); Load();
     }
     public void Load()

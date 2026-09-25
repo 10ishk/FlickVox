@@ -1,12 +1,13 @@
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using FlickVox.Models;
+using FlickVox.Infrastructure;
 
 namespace FlickVox.Services;
 
 public sealed class PhraseService
 {
-    readonly string _path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FlickVox", "phrases.json");
+    readonly string _path = Path.Combine(AppDataPaths.Root, "phrases.json");
     bool _loadFailed;
     public ObservableCollection<SavedPhrase> Items { get; } = [];
 

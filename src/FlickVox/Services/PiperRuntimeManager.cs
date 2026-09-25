@@ -1,12 +1,13 @@
 using System.IO.Compression;
 using System.Net.Http;
+using FlickVox.Infrastructure;
 
 namespace FlickVox.Services;
 
 public sealed class PiperRuntimeManager
 {
     const string RuntimeUrl = "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_windows_amd64.zip";
-    readonly string _root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FlickVox", "runtime");
+    readonly string _root = AppDataPaths.Runtime;
     public string ExecutablePath => Path.Combine(_root, "piper", "piper.exe");
     public bool IsInstalled => File.Exists(ExecutablePath);
 

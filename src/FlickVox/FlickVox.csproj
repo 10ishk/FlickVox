@@ -11,6 +11,10 @@
     <AssemblyName>FlickVox</AssemblyName>
     <Version>0.1.0</Version>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NAudio" Version="2.2.1" />
     <Resource Include="Assets\Fonts\*.ttf" />
