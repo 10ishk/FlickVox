@@ -16,6 +16,6 @@
     <Resource Include="Assets\Fonts\*.ttf" />
     <Resource Include="Assets\FlickVox.ico" />
     <Resource Include="Assets\Branding\*.png" />
-    <Content Include="Assets\FlickVoxTray.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\FlickVoxTray*.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

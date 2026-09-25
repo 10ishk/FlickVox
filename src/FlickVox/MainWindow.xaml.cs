@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Microsoft.Win32;
 using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -32,6 +33,8 @@ public partial class MainWindow : Window
     readonly HistoryService _history;
     readonly PhraseService _phrases = new();
     NotifyIcon? _tray;
+    System.Drawing.Icon? _trayIcon;
+    TrayIconVariant? _trayIconVariant;
     bool _expanded;
     bool _busy;
     bool _exitRequested;
@@ -108,8 +111,8 @@ public partial class MainWindow : Window
 
     void CreateTray()
     {
-        var trayPath = Path.Combine(AppContext.BaseDirectory, "Assets", "FlickVoxTray.ico");
-        _tray = new NotifyIcon { Text = "FlickVox", Icon = new System.Drawing.Icon(trayPath), Visible = true };
+        _tray = new NotifyIcon { Text = "FlickVox" };
+        RefreshTrayIcon();
         var menu = new ContextMenuStrip();
         menu.Items.Add("Open FlickVox", null, (_, _) => ShowWorkspace());
         menu.Items.Add("Open quick pill", null, (_, _) => ShowQuick());
@@ -124,6 +127,53 @@ public partial class MainWindow : Window
         });
         _tray.ContextMenuStrip = menu;
         _tray.DoubleClick += (_, _) => ShowWorkspace();
+        SystemEvents.UserPreferenceChanged += OnWindowsAppearanceChanged;
+        SystemParameters.StaticPropertyChanged += OnSystemParametersChanged;
+    }
+
+    enum TrayIconVariant { Light, Dark, HighContrast }
+
+    static TrayIconVariant SelectTrayIcon(bool highContrast, bool systemUsesLightTheme) =>
+        highContrast ? TrayIconVariant.HighContrast : systemUsesLightTheme ? TrayIconVariant.Dark : TrayIconVariant.Light;
+
+    static TrayIconVariant CurrentWindowsTrayIcon()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+        var light = key?.GetValue("SystemUsesLightTheme") is int value && value != 0;
+        return SelectTrayIcon(SystemParameters.HighContrast, light);
+    }
+
+    void RefreshTrayIcon()
+    {
+        if (_tray is null) return;
+        var variant = CurrentWindowsTrayIcon();
+        if (_trayIconVariant == variant) return;
+        var name = variant switch
+        {
+            TrayIconVariant.Dark => "FlickVoxTrayDark.ico",
+            TrayIconVariant.HighContrast => "FlickVoxTrayHighContrast.ico",
+            _ => "FlickVoxTrayLight.ico"
+        };
+        var next = new System.Drawing.Icon(Path.Combine(AppContext.BaseDirectory, "Assets", name));
+        var previous = _trayIcon;
+        _tray.Icon = next;
+        _trayIcon = next;
+        _trayIconVariant = variant;
+        _tray.Visible = true;
+        previous?.Dispose();
+    }
+
+    void OnWindowsAppearanceChanged(object sender, UserPreferenceChangedEventArgs e) => QueueTrayIconRefresh();
+
+    void OnSystemParametersChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SystemParameters.HighContrast)) QueueTrayIconRefresh();
+    }
+
+    void QueueTrayIconRefresh()
+    {
+        if (!_exitRequested && !Dispatcher.HasShutdownStarted && !Dispatcher.HasShutdownFinished)
+            Dispatcher.BeginInvoke(new Action(RefreshTrayIcon));
     }
 
     void ShowQuick()
@@ -718,7 +768,12 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _speech.Stop();
-        _tray?.Dispose();
+        SystemEvents.UserPreferenceChanged -= OnWindowsAppearanceChanged;
+        SystemParameters.StaticPropertyChanged -= OnSystemParametersChanged;
+        var tray = _tray;
+        _tray = null;
+        tray?.Dispose();
+        _trayIcon?.Dispose();
         _hotkey.Dispose();
         _audio.Dispose();
         base.OnClosed(e);
