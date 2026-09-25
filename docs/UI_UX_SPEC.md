@@ -4,7 +4,17 @@
 **Based on:** the `10ishk/FlickVox` README (WPF · .NET 10 · Piper · NAudio) and your two screenshots (wide and narrow window).
 **Goal:** turn FlickVox from "a working tool with default-ish styling" into a product that feels fast, calm, trustworthy and unmistakably designed.
 
-**Unified-window amendment (25 Sep 2026):** Sections 9–10 and the two HTML design references supersede earlier separate-window and wide-layout examples. Retain accessibility guidance; do not treat older concept sketches or speculative waveform items as implemented behavior.
+**Implementation status (25 Sep 2026):** This document preserves the original design research and proposals. It is **not** a current feature checklist. The [README](../README.md) and application source describe shipped behavior. Sections 0–8 and 11–24 contain historical ideas, including controls and shortcuts that were never implemented. The current unified-window behavior is summarized immediately below; the older Section 9 text remains for design history.
+
+| Current implementation | Historical proposal, not current behavior |
+|---|---|
+| One shared quick pill / expanded composer; immediate quick-pill hiding while speech continues; no manual focus restoration | Separate overlay, hiding only after playback, and focus-restoration promises |
+| Minimal first-run input, Speak and Set up voices; overflow unlocked after successful speech; returning settings migrated | Three-step skippable welcome wizard and starter phrase packs |
+| Overflow menu with collapsible Voice, Speed, Output and Saved sections plus Repeat | Permanently visible footer chips, separate Recent popover and Save chip |
+| `Alt+1`–`Alt+9` local phrase shortcuts; `Ctrl+E` mode toggle | `Ctrl+1`–`Ctrl+9`, `Ctrl+,`, F1 cheat sheet and global phrase shortcuts |
+| Eight named themes plus System, semantic colors, 16 px vector controls, preparing pulse and playback-only waveform | Fixed dark-only palette, 20 px icons and no activity animation |
+
+**Verification boundary:** the original timing targets, mockups and aspirational accessibility checklist are design goals, not measured release claims. Hardware/game-specific behavior still requires manual verification.
 
 ---
 
@@ -20,10 +30,10 @@
 | 6 | UI font | **Inter** (bundled static weights) → fallback Segoe UI Variable / Segoe UI |
 | 7 | Wordmark font | **Sora SemiBold** (wordmark only) |
 | 8 | Accessibility font option | **Atkinson Hyperlegible** as a user-selectable composer font |
-| 9 | Icons | **Fluent System Icons** (MIT), 20 px, replace all text glyphs (`✕`, `↗`) |
-| 10 | Expanded layout | Slim title bar, composer, saved chips, quiet configuration footer and Recent popover |
-| 11 | Settings | Keep Voice / Output / Speed in functional footer popovers |
-| 12 | Unified window | One window: 360 × 48 quick pill or compact expanded workspace |
+| 9 | Icons | **Fluent System Icons** (MIT), 16 px in the current compact interface |
+| 10 | Expanded layout | Slim title bar and composer, with advanced controls in compact overflow |
+| 11 | Configuration | Voice / Output / Speed in the overflow; also available in Settings |
+| 12 | Unified window | One window: quick pill or compact expanded workspace |
 
 If you only have one evening: do **Section 2 (fix the audit list)** and **Phase 0** in Section 19. That alone removes everything that looks "unfinished".
 
@@ -266,7 +276,7 @@ Prefer 1 px strokes over thick outlines; use the shadow only on floating things.
 
 ---
 
-## 7. Information architecture & screens
+## 7. Information architecture & screens (historical proposal)
 
 ```
 FlickVox
@@ -289,7 +299,7 @@ No separate overlay process or competing primary window exists. Both modes share
 
 ---
 
-## 8. Keyboard & interaction model
+## 8. Keyboard & interaction model (historical proposal)
 
 | Shortcut | Scope | Action |
 |---|---|---|
@@ -313,31 +323,31 @@ Interaction rules:
 
 ---
 
-## 9. Unified compact window
+## 9. Unified compact window (current implementation)
 
 FlickVox has one primary WPF window with two modes, not a separate main window and overlay. The same text box, draft, speech state, shared history, phrase service, hotkey and tray commands serve both modes. Settings and Voice Manager remain separate supporting dialogs.
 
 ### Collapsed quick pill
 
-Target approximately 360 × 48 DIPs for new settings, with accessible user-adjustable width. A dedicated drag grip, shared input, small contextual status, visible Send/Stop button and expand action fit in one pill. Ctrl+Alt+T opens this mode and focuses the input. Enter speaks; Shift+Enter inserts a newline; Escape stops speech or dismisses. The quick pill hides after **successful playback** only when that preference is enabled. Errors retain the draft. No audio-reactive visualization is implied.
+Target approximately 360 × 48 DIPs for returning users, with an adjustable width. A six-dot drag grip, shared input and Send/Stop button fit in one pill. `Ctrl+Alt+T` summons this mode and focuses the input; `Ctrl+E` or a double-click on the grip expands it. Enter speaks; Shift+Enter inserts a newline. When the hide preference is enabled, the pill hides **immediately on submission** while Piper and playback continue. Errors retain the submitted text. The grip and a transient preparing/playback indicator are the only other visible controls; first-run users also see a setup prompt.
 
 ### Expanded workspace
 
-Target roughly 380–440 DIPs wide and a short content-driven-feeling footprint. The slim title bar has Pin, Settings, Collapse and Close-to-tray actions. The composer remains the same input as the quick pill. Saved phrases appear as compact buttons with the first nine locally bound to Alt+1…Alt+9; a dashed Save Current chip opens the phrase editor. Right-click phrase actions provide Edit/Rename and confirmed Delete. Repeat remains available without rerunning Piper when its cache is valid. Voice, Output and Speed live in a quiet footer with functional popovers; Recent opens an actionable history popover.
+Target roughly 380–440 DIPs wide and a short content-driven footprint. The slim title bar has the approved logo, a compact overflow action, Pin, Settings, Collapse and Close-to-tray controls. The composer remains the same input as the quick pill. Saved phrases, Save Current, Recent, Voice, Output, Speed and Repeat are in one compact overflow popup, with collapsible groups and one outer scroll region. The first nine phrases have local `Alt+1`…`Alt+9` shortcuts; right-click actions provide Edit/Rename and Delete. Repeat uses the cached last message when available. Before the first successful speech, only the composer, prominent Speak action and setup prompt are shown, plus essential drag/close affordances.
 
 The expanded/collapsed state and position persist. A shortcut invocation deliberately opens the quick pill even if the saved state was expanded. Old overlay coordinates and non-default size settings migrate without replacing personal settings.
 
 ### Speech state and palette
 
-Idle and Typing use neutral feedback; Preparing remains neutral while Piper generates; the green signal appears **only during playback**; Error uses the error token. Send is white with dark icon while idle and becomes Stop during active speech. No fabricated waveform or activity animation is used.
+Idle and Typing use neutral feedback; Preparing uses a subtle reduced-motion-aware pulse while Piper generates; a lightweight waveform appears **only during actual playback**; Error uses the error token. Send changes to Stop while speech is active. All colors are selected through semantic resources for the active theme rather than a fixed dark-only palette.
 
-The dark palette is authoritative: Base `#0E1015`, Raised `#14171E`, Hover `#1A1D26`, Border `#262A34`; text `#E8EAF0`, `#9096A3`, `#5B6070`; primary action `#F4F5F7` / on-primary `#0E1015`; speaking `#3DDC97` / border `#1F5A43`; Error `#F0616D`; Warning `#F2B441`. These are semantic resources shared by supporting windows. The explicit Light and High Contrast preferences retain their corresponding accessible palettes.
+The original Signal color values elsewhere in this document are historical references. The application currently offers eight named palettes plus System mode, including Paper, Blush Pink and High Contrast. The active palette feeds shared semantic resources for text, surfaces, buttons, focus, status and supporting windows.
 
 [Unified layout reference](design/flickvox_compact_layout_proposal.html) and [palette reference](design/flickvox_color_palette.html) are visual source material, not HTML used in the WPF application. The earlier [compact-first concept](design/flickvox_compact_concept.svg) is superseded for the primary-window architecture.
 
 ---
 
-## 10. Interaction and accessibility
+## 10. Interaction and accessibility (historical proposal)
 
 The global shortcut registers once and opens the existing primary window in quick mode; no second primary window or additional global hooks are created. Alt+1…Alt+9 shortcuts are local to FlickVox focus and announce their mapping in the Saved label and phrase tooltips. The same phrase and recent collections back both window modes. Popovers and dialogs remain keyboard accessible. Positioning clamps to the current visible working area and respects DPI scaling; exclusive-fullscreen games may still prevent an overlay from appearing.
 
@@ -405,7 +415,7 @@ Dialog 720 × 560. Purpose: install/preview/choose voices without confusion.
 
 ---
 
-## 13. Settings
+## 13. Settings (historical proposal)
 
 A dialog/page with a left list (icons + labels, 200 px) and a content pane. Group as:
 
@@ -422,7 +432,7 @@ Each setting has a one-line description in `TextSecondary`. Changes apply instan
 
 ---
 
-## 14. First run, empty states and errors
+## 14. First run, empty states and errors (historical proposal)
 
 ### 14.1 First-run (3 steps, skippable, one dialog)
 1. **Welcome** — logo, *"Type it. Say it."*, and the trust line: *"Runs entirely on your PC. Nothing is uploaded."*

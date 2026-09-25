@@ -11,9 +11,9 @@ public sealed class SettingsService
     };
     private readonly string _path;
     public AppSettings Current { get; private set; } = new();
-    public SettingsService()
+    public SettingsService(string? dataRoot = null)
     {
-        var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FlickVox");
+        var root = dataRoot ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FlickVox");
         Directory.CreateDirectory(root); _path = Path.Combine(root, "settings.json"); Load();
     }
     public void Load()
@@ -33,7 +33,16 @@ public sealed class SettingsService
                 Save();
             }
         }
-        catch { Current = new(); }
+        catch (JsonException)
+        {
+            // Keep the unreadable original available for recovery before future saves replace it.
+            if (File.Exists(_path))
+            {
+                var backup = _path + ".invalid-" + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff");
+                File.Copy(_path, backup);
+            }
+            Current = new();
+        }
     }
     public void Save() { var temp = _path + ".tmp"; File.WriteAllText(temp, JsonSerializer.Serialize(Current, JsonOptions)); File.Move(temp, _path, true); }
 }

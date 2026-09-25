@@ -7,8 +7,12 @@ public sealed class VoiceManager
     public static readonly IReadOnlyList<VoiceDefinition> Voices = new[] {
       Voice("en_US-ryan-low", "Ryan Low", 60), Voice("en_US-ryan-medium", "Ryan Medium", 60), Voice("en_US-ryan-high", "Ryan High", 115),
       Voice("en_US-lessac-low", "Lessac Low", 60), Voice("en_US-lessac-medium", "Lessac Medium", 60), Voice("en_US-lessac-high", "Lessac High", 109) };
-    private readonly string _voices = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FlickVox", "runtime", "voices");
-    public VoiceManager() => Directory.CreateDirectory(_voices);
+    private readonly string _voices;
+    public VoiceManager(string? voicesRoot = null)
+    {
+        _voices = voicesRoot ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FlickVox", "runtime", "voices");
+        Directory.CreateDirectory(_voices);
+    }
     private static VoiceDefinition Voice(string id, string name, int mb) { var parts=id.Split('-'); var stem=$"en/en_US/{parts[1]}/{parts[2]}/{id}"; return new(id,name,mb*1024L*1024,$"{Base}/{stem}.onnx?download=true",$"{Base}/{stem}.onnx.json?download=true"); }
     public string ModelPath(string id) => Path.Combine(_voices, id + ".onnx");
     public bool IsInstalled(string id) { var model=ModelPath(id); return File.Exists(model) && new FileInfo(model).Length > 1024 && File.Exists(model + ".json"); }

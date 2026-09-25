@@ -4,6 +4,48 @@ using System.Reflection;
 using FlickVox.Models;
 using FlickVox.Services;
 
+if (args.Contains("settings-isolation"))
+{
+    var root = Path.Combine(Path.GetTempPath(), "FlickVox-settings-check-" + Guid.NewGuid().ToString("N"));
+    Directory.CreateDirectory(root);
+    try
+    {
+        var fresh = new SettingsService(root);
+        if (fresh.Current.OverflowUnlocked) throw new Exception("New profile unexpectedly unlocked overflow.");
+        fresh.Save();
+        var returning = new SettingsService(root);
+        if (returning.Current.OverflowUnlocked) throw new Exception("New-profile onboarding did not persist.");
+        var settingsPath = Path.Combine(root, "settings.json");
+        var legacy = File.ReadAllText(settingsPath).Replace("  \"OnboardingMigrationComplete\": true,", "");
+        File.WriteAllText(settingsPath, legacy);
+        var migrated = new SettingsService(root);
+        if (!migrated.Current.OverflowUnlocked || !migrated.Current.OnboardingMigrationComplete)
+            throw new Exception("Existing-profile migration failed.");
+        var invalid = "{ invalid personal settings";
+        File.WriteAllText(settingsPath, invalid);
+        _ = new SettingsService(root);
+        if (!Directory.GetFiles(root, "settings.json.invalid-*").Any(p => File.ReadAllText(p) == invalid))
+            throw new Exception("Malformed settings were not preserved.");
+        var voiceRoot = Path.Combine(root, "voices");
+        var voices = new VoiceManager(voiceRoot);
+        var voiceId = VoiceManager.Voices[0].Id;
+        if (voices.IsInstalled(voiceId)) throw new Exception("Missing disposable voice reported installed.");
+        var model = voices.ModelPath(voiceId);
+        File.WriteAllBytes(model, new byte[2048]);
+        File.WriteAllText(model + ".json", "{}");
+        if (!voices.IsInstalled(voiceId)) throw new Exception("Complete disposable voice not detected.");
+        migrated.Current.VoiceId = voiceId;
+        migrated.Save();
+        if (new SettingsService(root).Current.VoiceId != voiceId) throw new Exception("Selected disposable voice did not persist.");
+        File.Delete(model);
+        File.Delete(model + ".json");
+        if (voices.IsInstalled(voiceId)) throw new Exception("Removed disposable voice still detected.");
+        Console.WriteLine("PASS: isolated first-run state, persistence, returning-user migration, invalid settings backup, disposable voice selection and model detection/removal");
+    }
+    finally { Directory.Delete(root, recursive: true); }
+    return;
+}
+
 var settings = new SettingsService();
 settings.Current.VoiceId = "en_US-ryan-medium";
 settings.Current.Speed = 1;

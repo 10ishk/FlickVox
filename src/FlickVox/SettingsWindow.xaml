@@ -112,7 +112,11 @@
                          Foreground="{DynamicResource Brush.TextSecondary}" TextWrapping="Wrap"/>
             </StackPanel>
             <StackPanel x:Name="AboutPanel" Visibility="Collapsed">
-              <TextBlock Text="FlickVox" FontFamily="{StaticResource Font.Brand}" FontSize="20" FontWeight="SemiBold"/>
+              <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <Image Source="Assets/Branding/flickvox-icon.png" Width="32" Height="32" Stretch="Uniform"
+                       AutomationProperties.Name="FlickVox logo" Margin="0,0,8,0"/>
+                <TextBlock Text="FlickVox" FontFamily="{StaticResource Font.Brand}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
+              </StackPanel>
               <TextBlock x:Name="AboutVersion" Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,16"/>
               <TextBlock Text="A lightweight, offline text-to-speech application powered by Piper."
                          TextWrapping="Wrap" Margin="0,0,0,16"/>
@@ -120,6 +124,10 @@
               <TextBlock Margin="0,0,0,24">
                 <Hyperlink NavigateUri="https://github.com/10ishk/FlickVox" RequestNavigate="OpenExternalLink"
                            Foreground="{DynamicResource Brush.AccentText}" ToolTip="Open FlickVox source in your browser">View source on GitHub</Hyperlink>
+              </TextBlock>
+              <TextBlock Margin="0,0,0,16">
+                <Hyperlink NavigateUri="https://github.com/10ishk/FlickVox/issues" RequestNavigate="OpenExternalLink"
+                           Foreground="{DynamicResource Brush.AccentText}" ToolTip="Open the FlickVox issue tracker in your browser">Report an issue</Hyperlink>
               </TextBlock>
               <TextBlock Text="Speech synthesis powered by Piper." Foreground="{DynamicResource Brush.TextSecondary}" Margin="0,0,0,8"/>
               <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextSecondary}">
